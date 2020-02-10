@@ -51,8 +51,6 @@ int main(int argc, char * argv[])
 	gui.m_renderInterface = app->m_renderer;
 	gui.m_appInterface = app;
 	
-	//DummyGUIHelper gui;
-
 	CommonExampleOptions options(&gui);
 
 	example = StandaloneExampleCreateFunc(options);

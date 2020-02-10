@@ -28,9 +28,9 @@ app bullet3-StandaloneMain-Framework
 	add_files ../bullet3/examples/BasicDemo/BasicExample.h
 	add_files ../bullet3/examples/OpenGLWindow/SimpleCamera.cpp
 	add_files ../bullet3/examples/OpenGLWindow/SimpleCamera.h
-	add_files FrameworkAppInterface.h
 	add_files FrameworkDebugDrawer.cpp
 	add_files FrameworkDebugDrawer.h
+	add_files FrameworkGuiHelper.cpp
 	add_files FrameworkGuiHelper.h
 	add_files FrameworkRenderInterface.cpp
 	add_files FrameworkRenderInterface.h
