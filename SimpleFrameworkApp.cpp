@@ -236,8 +236,6 @@ SimpleFrameworkApp::SimpleFrameworkApp(
 {
 	gApp = this;
 
-	setupPaths(CHIBI_RESOURCE_PATHS);
-	
 	m_data = new SimpleInternalData();
 
 	m_window = new FrameworkWindow();
