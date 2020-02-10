@@ -1,0 +1,62 @@
+library libbullet3 shared
+	add_files ../bullet3/src/btBulletCollisionAll.cpp
+	add_files ../bullet3/src/btBulletDynamicsAll.cpp
+	add_files ../bullet3/src/btLinearMathAll.cpp
+
+# not sure if this should be in main lib ?
+	add_files ../bullet3/src/Bullet3Common/b3AlignedAllocator.cpp
+	add_files ../bullet3/src/Bullet3Common/b3Logging.cpp
+
+	header_path ../bullet3/src expose
+
+app bullet3-BasicDemo
+	depend_library libbullet3
+	add_files ../bullet3/examples/BasicDemo/BasicExample.cpp
+	add_files ../bullet3/examples/BasicDemo/BasicExample.h
+	add_files ../bullet3/examples/BasicDemo/main.cpp
+
+library bullet3-Examples-Utils
+	depend_library libbullet3
+	add_files ../bullet3/examples/Utils/b3Clock.cpp
+	add_files ../bullet3/examples/Utils/b3Clock.h
+
+app bullet3-StandaloneMain-Framework
+	depend_library framework
+	depend_library libbullet3
+	depend_library bullet3-Examples-Utils
+	add_files ../bullet3/examples/BasicDemo/BasicExample.cpp
+	add_files ../bullet3/examples/BasicDemo/BasicExample.h
+	add_files ../bullet3/examples/OpenGLWindow/SimpleCamera.cpp
+	add_files ../bullet3/examples/OpenGLWindow/SimpleCamera.h
+	add_files FrameworkAppInterface.h
+	add_files FrameworkDebugDrawer.cpp
+	add_files FrameworkDebugDrawer.h
+	add_files FrameworkGuiHelper.h
+	add_files FrameworkRenderInterface.cpp
+	add_files FrameworkRenderInterface.h
+	add_files FrameworkWindow.cpp
+	add_files FrameworkWindow.h
+	add_files StandaloneMain.cpp
+	add_files SimpleFrameworkApp.cpp
+	add_files SimpleFrameworkApp.h
+	compile_definition B3_USE_STANDALONE_EXAMPLE *
+	header_path ../bullet3/examples
+
+app bullet3-ExampleBrowser-Framework
+	
+	depend_library framework
+	depend_library libbullet3
+	
+	add_files FrameworkExampleBrowser.cpp
+	add_files FrameworkExampleBrowser.h
+
+	add_files ../bullet3/examples/OpenGLWindow/SimpleCamera.cpp
+	add_files ../bullet3/examples/OpenGLWindow/SimpleCamera.h
+
+	add_files ../bullet3/examples/MultiBody/Pendulum.cpp
+	add_files ../bullet3/examples/VoronoiFracture/btConvexConvexMprAlgorithm.cpp
+	add_files ../bullet3/examples/VoronoiFracture/VoronoiFractureDemo.cpp
+
+	add_files ../bullet3/examples/Utils/ChromeTraceUtil.cpp
+
+	header_path ../bullet3/examples
