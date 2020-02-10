@@ -74,7 +74,19 @@ int FrameworkRenderInterface::registerGraphicsInstance(int shapeIndex, const dou
 
 void FrameworkRenderInterface::drawLines(const float* positions, const float color[4], int numPoints, int pointStrideInBytes, const unsigned int* indices, int numIndices, float pointDrawSize)
 {
-	Assert(false);
+	gxColor4fv(color);
+	gxBegin(GX_LINES);
+	{
+		for (int i = 0; i < numIndices; ++i)
+		{
+			const int index = indices[i];
+			
+			const float * position = (float*)(((uint8_t*)positions) + index * pointStrideInBytes);
+			
+			gxVertex4fv(position);
+		}
+	}
+	gxEnd();
 }
 
 void FrameworkRenderInterface::drawLine(const float from[4], const float to[4], const float color[4], float lineWidth)

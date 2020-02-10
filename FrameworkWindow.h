@@ -2,8 +2,6 @@
 
 #include "CommonInterfaces/CommonWindowInterface.h"
 
-class Window;
-
 class FrameworkWindow : public CommonWindowInterface
 {
 	float m_backgroundColor[3] = { 1.f, 1.f, 1.f };
@@ -11,6 +9,8 @@ class FrameworkWindow : public CommonWindowInterface
 	b3MouseMoveCallback m_mouseMoveCallback = nullptr;
 	b3MouseButtonCallback m_mouseButtonCallback = nullptr;
 	b3ResizeCallback m_resizeCallback = nullptr;
+	b3WheelCallback m_wheelCallback = nullptr;
+	b3KeyboardCallback m_keyboardCallback = nullptr;
 	b3RenderCallback m_renderCallback = nullptr;
 	
 public:

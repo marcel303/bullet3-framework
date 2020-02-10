@@ -62,6 +62,7 @@ void FrameworkDebugDrawer::reportErrorWarning(const char * warningString)
 
 void FrameworkDebugDrawer::draw3dText(const btVector3 & location, const char * textString)
 {
+	Assert(false);
 }
 
 void FrameworkDebugDrawer::setDebugMode(int debugMode)

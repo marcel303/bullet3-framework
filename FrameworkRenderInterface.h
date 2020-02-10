@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CommonInterfaces/CommonRenderInterface.h"
-
 #include "OpenGLWindow/SimpleCamera.h"
 
 class FrameworkRenderInterface : public CommonRenderInterface
 {
+private:
 	SimpleCamera camera;
 	
 	int m_screenWidth = 0;

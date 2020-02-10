@@ -3,7 +3,6 @@
 
 FrameworkWindow::~FrameworkWindow()
 {
-	framework.shutdown();
 }
 
 void FrameworkWindow::createDefaultWindow(int width, int height, const char * title)
@@ -19,17 +18,16 @@ void FrameworkWindow::createWindow(const b3gWindowConstructionInfo & ci)
 
 void FrameworkWindow::closeWindow()
 {
-	// ??
-	Assert(false);
+	framework.shutdown();
 }
 
 void FrameworkWindow::runMainLoop()
 {
 	framework.process();
 	
-	if (mouse.dx || mouse.dy)
+	if (m_mouseMoveCallback != nullptr)
 	{
-		if (m_mouseMoveCallback != nullptr)
+		if (mouse.dx || mouse.dy)
 		{
 			m_mouseMoveCallback(mouse.x, mouse.y);
 		}
@@ -41,6 +39,23 @@ void FrameworkWindow::runMainLoop()
 			m_mouseButtonCallback(0, 1, mouse.x, mouse.y);
 		if (mouse.wentUp(BUTTON_LEFT))
 			m_mouseButtonCallback(0, 0, mouse.x, mouse.y);
+	}
+	
+	if (m_wheelCallback != nullptr)
+	{
+		if (mouse.scrollY != 0)
+			m_wheelCallback(0, mouse.scrollY);
+	}
+	
+	if (m_keyboardCallback != nullptr)
+	{
+		for (auto & e : framework.events)
+		{
+			if (e.type == SDL_KEYDOWN)
+				m_keyboardCallback(e.key.keysym.sym, 1);
+			else if (e.type == SDL_KEYUP)
+				m_keyboardCallback(e.key.keysym.sym, 0);
+		}
 	}
 }
 
@@ -102,8 +117,11 @@ b3MouseButtonCallback FrameworkWindow::getMouseButtonCallback()
 void FrameworkWindow::setResizeCallback(b3ResizeCallback resizeCallback)
 {
 	m_resizeCallback = resizeCallback;
+	
 	if (m_resizeCallback != nullptr)
+	{
 		m_resizeCallback(getWidth(), getHeight());
+	}
 }
 
 b3ResizeCallback FrameworkWindow::getResizeCallback()
@@ -113,20 +131,22 @@ b3ResizeCallback FrameworkWindow::getResizeCallback()
 
 void FrameworkWindow::setWheelCallback(b3WheelCallback wheelCallback)
 {
+	m_wheelCallback = wheelCallback;
 }
 
 b3WheelCallback FrameworkWindow::getWheelCallback()
 {
-	return nullptr;
+	return m_wheelCallback;
 }
 
 void FrameworkWindow::setKeyboardCallback(b3KeyboardCallback keyboardCallback)
 {
+	m_keyboardCallback = keyboardCallback;
 }
 
 b3KeyboardCallback FrameworkWindow::getKeyboardCallback()
 {
-	return nullptr;
+	return m_keyboardCallback;
 }
 
 void FrameworkWindow::setRenderCallback(b3RenderCallback renderCallback)
@@ -165,6 +185,7 @@ int FrameworkWindow::getHeight() const
 
 int FrameworkWindow::fileOpenDialog(char * fileName, int maxFileNameLength)
 {
+	Assert(false);
 	return 0;
 }
 
