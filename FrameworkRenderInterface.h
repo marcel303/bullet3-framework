@@ -27,15 +27,7 @@ public:
 		//Assert(false);
 		Mat4x4 viewMatrix;
 		camera.getCameraViewMatrix(viewMatrix.m_v);
-		gxSetMatrixf(GX_MODELVIEW, viewMatrix.m_v);
-		
-		Camera camera3d;
-		camera3d.mode = Camera::kMode_Orbit;
-		camera3d.orbit.azimuth = camera.getCameraYaw();
-		camera3d.orbit.elevation = camera.getCameraPitch();
-		camera3d.orbit.distance = -camera.getCameraDistance();
-		camera.getCameraTargetPosition(&camera3d.orbit.origin[0]);
-		camera3d.calculateViewMatrix(viewMatrix);
+		viewMatrix = Mat4x4(true).Scale(1, 1, -1).Mul(viewMatrix);
 		gxSetMatrixf(GX_MODELVIEW, viewMatrix.m_v);
 	}
 	
