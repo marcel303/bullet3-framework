@@ -3,7 +3,6 @@
 #include "framework.h"
 
 FrameworkDebugDrawer::FrameworkDebugDrawer()
-	: m_currentLineColor(-1, -1, -1)
 {
 }
 
@@ -22,23 +21,21 @@ void FrameworkDebugDrawer::setDefaultColors(const DefaultColors & colors)
 }
 
 void FrameworkDebugDrawer::drawLine(
-	const btVector3 & from1,
-	const btVector3 & to1,
-	const btVector3 & color1)
+	const btVector3 & from,
+	const btVector3 & to,
+	const btVector3 & color)
 {
-	if (m_currentLineColor != color1 || m_linePoints.size() >= BT_LINE_BATCH_SIZE)
+	if (m_linePoints.size() >= BT_LINE_BATCH_SIZE)
 	{
 		flushLines();
-		m_currentLineColor = color1;
 	}
-	
-	const Vec3 from(from1.x(), from1.y(), from1.z());
-	const Vec3 to(to1.x(), to1.y(), to1.z());;
 
 	const size_t index = m_linePoints.size();
 	
 	m_linePoints.push_back(from);
 	m_linePoints.push_back(to);
+	m_lineColors.push_back(color);
+	m_lineColors.push_back(color);
 
 	m_lineIndices.push_back(index);
 	m_lineIndices.push_back(index + 1);
@@ -79,26 +76,23 @@ void FrameworkDebugDrawer::flushLines()
 {
 	if (m_linePoints.size() > 0)
 	{
-		float debugColor[4];
-		debugColor[0] = m_currentLineColor.x();
-		debugColor[1] = m_currentLineColor.y();
-		debugColor[2] = m_currentLineColor.z();
-		debugColor[3] = 1.f;
-		
 		gxBegin(GX_LINES);
 		{
-			gxColor4fv(debugColor);
-			
 			for (size_t i = 0; i < m_lineIndices.size(); ++i)
 			{
-				const int index = m_lineIndices[i];
+				const auto index = m_lineIndices[i];
 				
+				gxColor4f(
+					m_lineColors[index][0],
+					m_lineColors[index][1],
+					m_lineColors[index][2], 1.f);
 				gxVertex3fv(&m_linePoints[index][0]);
 			}
 		}
 		gxEnd();
 		
 		m_linePoints.clear();
+		m_lineColors.clear();
 		m_lineIndices.clear();
 	}
 }

@@ -1,5 +1,6 @@
 #include "framework.h"
 #include "FrameworkWindow.h"
+#include <SDL2/SDL.h>
 
 FrameworkWindow::~FrameworkWindow()
 {
@@ -8,6 +9,7 @@ FrameworkWindow::~FrameworkWindow()
 void FrameworkWindow::createDefaultWindow(int width, int height, const char * title)
 {
 	framework.windowTitle = title;
+	framework.enableDepthBuffer = true;
 	framework.init(width, height);
 }
 
@@ -82,6 +84,7 @@ void FrameworkWindow::startRendering()
 		m_backgroundColor[2] * 255.f,
 		255);
 	projectPerspective3d(90.f, .1f, 1000.f);
+	setDepthTest(true, DEPTH_LESS);
 }
 
 void FrameworkWindow::endRendering()
@@ -91,6 +94,13 @@ void FrameworkWindow::endRendering()
 
 bool FrameworkWindow::isModifierKeyPressed(int key)
 {
+	if (key == B3G_ALT)
+		return keyboard.isDown(SDLK_LALT) || keyboard.isDown(SDLK_RALT);
+	else if (key == B3G_CONTROL)
+		return keyboard.isDown(SDLK_LCTRL) || keyboard.isDown(SDLK_RCTRL);
+	else if (key == B3G_SHIFT)
+		return keyboard.isDown(SDLK_LSHIFT) || keyboard.isDown(SDLK_RSHIFT);
+	
 	return false;
 }
 

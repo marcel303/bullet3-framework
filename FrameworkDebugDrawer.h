@@ -11,10 +11,10 @@ ATTRIBUTE_ALIGNED16(class) FrameworkDebugDrawer : public btIDebugDraw
 {
 	int m_debugMode = 0;
 
-	btAlignedObjectArray<Vec3> m_linePoints;
-	btAlignedObjectArray<unsigned int> m_lineIndices;
+	btAlignedObjectArray<btVector3> m_linePoints;
+	btAlignedObjectArray<btVector3> m_lineColors;
+	btAlignedObjectArray<int> m_lineIndices;
 
-	btVector3 m_currentLineColor;
 	DefaultColors m_ourColors;
 
 public:

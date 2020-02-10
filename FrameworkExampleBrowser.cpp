@@ -19,8 +19,6 @@
 #include "FrameworkRenderInterface.h"
 #include "SimpleFrameworkApp.h"
 
-#define TODO_GUI2 false
-
 static CommonGraphicsApp * s_app = nullptr;
 static CommonWindowInterface * s_window = nullptr;
 static CommonRenderInterface * s_instancingRenderer = nullptr;
@@ -29,36 +27,27 @@ static FrameworkGUIHelperInterface * s_guiHelper = nullptr;
 
 static SharedMemoryInterface * sSharedMem = nullptr;
 
-#define DEMO_SELECTION_COMBOBOX 13
-
-const char * startFileName = "0_Bullet3Demo.txt";
-
 static bool gEnableDefaultKeyboardShortcuts = true;
-static int sCurrentDemoIndex = -1;
-static int sCurrentHightlighted = 0;
-static CommonExampleInterface * sCurrentDemo = 0;
-static float gFixedTimeStep = 0;
+static CommonExampleInterface * sCurrentDemo = nullptr;
+static float gFixedTimeStep = 0.f;
 static bool gDisableDemoSelection = false;
-static class ExampleEntries* gAllExamples = 0;
+static class ExampleEntries * gAllExamples = nullptr;
 
 static bool visualWireframe = true;
 static bool renderVisualGeometry = true;
 static bool renderGrid = true;
 static bool gEnableRenderLoop = true;
 
-static bool renderGui = true;
-
 //int gDebugDrawFlags = 0; // todo : enable keyboard shortcuts for changing debug draw mode
 static int gDebugDrawFlags =
-	btIDebugDraw::DBG_DrawWireframe |
-	btIDebugDraw::DBG_DrawAabb |
-	btIDebugDraw::DBG_DrawContactPoints |
-	btIDebugDraw::DBG_DrawFeaturesText |
-	btIDebugDraw::DBG_DrawNormals;
+	1*btIDebugDraw::DBG_DrawWireframe |
+	0*btIDebugDraw::DBG_DrawAabb |
+	1*btIDebugDraw::DBG_DrawContactPoints |
+	0*btIDebugDraw::DBG_DrawFeaturesText |
+	1*btIDebugDraw::DBG_DrawNormals;
 	
 static bool pauseSimulation = false;
 static bool singleStepSimulation = false;
-extern bool gDisableDeactivation;
 
 //
 
@@ -69,50 +58,52 @@ static void deleteDemo();
 
 static void selectDemo(int demoIndex)
 {
-	bool resetCamera = (sCurrentDemoIndex != demoIndex);
-	sCurrentDemoIndex = demoIndex;
-	sCurrentHightlighted = demoIndex;
-	int numDemos = gAllExamples->getNumRegisteredExamples();
+	const int numDemos = gAllExamples->getNumRegisteredExamples();
 
 	if (demoIndex > numDemos)
 	{
 		demoIndex = 0;
 	}
+	
 	deleteDemo();
 
-	CommonExampleInterface::CreateFunc* func = gAllExamples->getExampleCreateFunc(demoIndex);
-	if (func)
+	CommonExampleInterface::CreateFunc * func = gAllExamples->getExampleCreateFunc(demoIndex);
+	
+	if (func != nullptr)
 	{
 		if (s_parameterInterface)
 		{
 			s_parameterInterface->removeAllParameters();
 		}
-		int option = gAllExamples->getExampleOption(demoIndex);
+		
+		const int option = gAllExamples->getExampleOption(demoIndex);
 
 		CommonExampleOptions options(s_guiHelper, option);
 		options.m_sharedMem = sSharedMem;
 		sCurrentDemo = (*func)(options);
-		if (sCurrentDemo)
+		
+		if (sCurrentDemo != nullptr)
 		{
 			b3Printf("Selected demo: %s", gAllExamples->getExampleName(demoIndex));
 
 			sCurrentDemo->initPhysics();
-			if (resetCamera)
-			{
-				sCurrentDemo->resetCamera();
-			}
+			sCurrentDemo->resetCamera();
+			
+			const char * name = gAllExamples->getExampleName(demoIndex);
+			s_window->setWindowTitle(name);
 		}
 	}
 }
 
 static void deleteDemo()
 {
-	if (sCurrentDemo)
+	if (sCurrentDemo != nullptr)
 	{
 		sCurrentDemo->exitPhysics();
 		s_instancingRenderer->removeAllInstances();
+		
 		delete sCurrentDemo;
-		sCurrentDemo = 0;
+		sCurrentDemo = nullptr;
 	}
 }
 
@@ -126,17 +117,7 @@ void MyKeyboardCallback(int key, int state)
 	
 	bool handled = false;
 	
-	if (renderGui)
-	{
-	#if TODO_GUI2
-		if (gui2 && !handled)
-		{
-			handled = gui2->keyboardCallback(key, state);
-		}
-	#endif
-	}
-
-	if (!handled && sCurrentDemo)
+	if (!handled && sCurrentDemo != nullptr)
 	{
 		handled = sCurrentDemo->keyboardCallback(key, state);
 	}
@@ -148,7 +129,14 @@ void MyKeyboardCallback(int key, int state)
 			if (gAllExamples->getNumRegisteredExamples() > 0)
 			{
 				srand(time(nullptr));
-				selectDemo(rand() % gAllExamples->getNumRegisteredExamples());
+				int index;
+				for (;;)
+				{
+					index = rand() % gAllExamples->getNumRegisteredExamples();
+					if (gAllExamples->getExampleCreateFunc(index) != nullptr)
+						break;
+				}
+				selectDemo(index);
 			}
 		}
 		
@@ -163,7 +151,6 @@ void MyKeyboardCallback(int key, int state)
 		if (key == 'd' && state)
 		{
 			gDebugDrawFlags ^= btIDebugDraw::DBG_NoDeactivation;
-			gDisableDeactivation = ((gDebugDrawFlags & btIDebugDraw::DBG_NoDeactivation) != 0);
 		}
 		if (key == 'j' && state)
 		{
@@ -192,7 +179,6 @@ void MyKeyboardCallback(int key, int state)
 		if (key == 'g' && state)
 		{
 			renderGrid = !renderGrid;
-			renderGui = !renderGui;
 		}
 
 		if (key == 'i' && state)
@@ -231,16 +217,8 @@ static void MyMouseMoveCallback(float x, float y)
 {
 	bool handled = false;
 	
-	if (sCurrentDemo)
+	if (sCurrentDemo != nullptr)
 		handled = sCurrentDemo->mouseMoveCallback(x, y);
-	
-	if (renderGui)
-	{
-	#if TODO_GUI2
-		if (!handled && gui2)
-			handled = gui2->mouseMoveCallback(x, y);
-	#endif
-	}
 	
 	if (!handled)
 	{
@@ -256,17 +234,9 @@ static void MyMouseButtonCallback(int button, int state, float x, float y)
 	bool handled = false;
 	
 	//try picking first
-	if (sCurrentDemo)
+	if (sCurrentDemo != nullptr)
 		handled = sCurrentDemo->mouseButtonCallback(button, state, x, y);
 
-	if (renderGui)
-	{
-	#if TODO_GUI2
-		if (!handled && gui2)
-			handled = gui2->mouseButtonCallback(button, state, x, y);
-	#endif
-	}
-	
 	if (!handled)
 	{
 		if (prevMouseButtonCallback)
@@ -296,33 +266,6 @@ void FrameworkExampleBrowser::registerFileImporter(
 	gFileImporterByExtension.push_back(fi);
 }
 
-static void openFileDemo(const char* filename)
-{
-	deleteDemo();
-
-	s_parameterInterface->removeAllParameters();
-
-	CommonExampleOptions options(s_guiHelper, 1);
-	options.m_fileName = filename;
-	char fullPath[1024];
-	sprintf(fullPath, "%s", filename);
-	b3FileUtils::toLower(fullPath);
-
-	for (int i = 0; i < gFileImporterByExtension.size(); i++)
-	{
-		if (strstr(fullPath, gFileImporterByExtension[i].m_extension.c_str()))
-		{
-			sCurrentDemo = gFileImporterByExtension[i].m_createFunc(options);
-		}
-	}
-
-	if (sCurrentDemo)
-	{
-		sCurrentDemo->initPhysics();
-		sCurrentDemo->resetCamera();
-	}
-}
-
 //
 
 FrameworkExampleBrowser::FrameworkExampleBrowser(ExampleEntries * examples)
@@ -345,7 +288,7 @@ FrameworkExampleBrowser::~FrameworkExampleBrowser()
 #endif
 
 	gFileImporterByExtension.clear();
-	gAllExamples = 0;
+	gAllExamples = nullptr;
 }
 
 #include "../bullet3/examples/ExampleBrowser/EmptyExample.h"
@@ -368,7 +311,7 @@ bool FrameworkExampleBrowser::init(int argc, char* argv[])
 
 	// add some demos to the gAllExamples
 
-	int numDemos = gAllExamples->getNumRegisteredExamples();
+	const int numDemos = gAllExamples->getNumRegisteredExamples();
 
 	if (sCurrentDemo == nullptr)
 	{
@@ -385,11 +328,11 @@ bool FrameworkExampleBrowser::init(int argc, char* argv[])
 		}
 	}
 
-	btAssert(sCurrentDemo != 0);
+	btAssert(sCurrentDemo != nullptr);
 	
-	if (sCurrentDemo == 0)
+	if (sCurrentDemo == nullptr)
 	{
-		printf("Error, no demo/example\n");
+		logError("no demo/example");
 		return false;
 	}
 
@@ -398,7 +341,6 @@ bool FrameworkExampleBrowser::init(int argc, char* argv[])
 
 CommonExampleInterface* FrameworkExampleBrowser::getCurrentExample()
 {
-	btAssert(sCurrentDemo);
 	return sCurrentDemo;
 }
 
@@ -409,7 +351,7 @@ bool FrameworkExampleBrowser::requestedExit()
 
 void FrameworkExampleBrowser::updateGraphics()
 {
-	if (sCurrentDemo)
+	if (sCurrentDemo != nullptr)
 	{
 		if (!pauseSimulation || singleStepSimulation)
 		{
@@ -443,7 +385,7 @@ void FrameworkExampleBrowser::update(float deltaTime)
 		s_app->drawText(bla, 10, 10);
 	}
 
-	if (sCurrentDemo)
+	if (sCurrentDemo != nullptr)
 	{
 		if (!pauseSimulation || singleStepSimulation)
 		{
@@ -451,9 +393,8 @@ void FrameworkExampleBrowser::update(float deltaTime)
 			//printf("Framecount = %d\n",frameCount);
 			B3_PROFILE("sCurrentDemo->stepSimulation");
 
-			if (gFixedTimeStep > 0)
+			if (gFixedTimeStep > 0.f)
 			{
-				
 				sCurrentDemo->stepSimulation(gFixedTimeStep);
 			}
 			else
@@ -488,26 +429,7 @@ void FrameworkExampleBrowser::update(float deltaTime)
 		}
 	}
 
-	static int toggle = 1; // todo : remove static
-	
-	if (renderGui)
-	{
-		B3_PROFILE("renderGui");
-		
-	#ifndef BT_NO_PROFILE
-		if (!pauseSimulation || singleStepSimulation)
-		{
-			if (isProfileWindowVisible(s_profWindow))
-			{
-				processProfileData(s_profWindow, false);
-			}
-		}
-	#endif  //#ifndef BT_NO_PROFILE
-	}
-
 	singleStepSimulation = false;
-
-	toggle = 1 - toggle;
 	
 	{
 		BT_PROFILE("Sync Parameters");
@@ -619,10 +541,12 @@ int main(int argc, char * argv[])
 	s_window = s_app->m_window;
 	
 	s_guiHelper = new FrameworkGUIHelperInterface();
-	s_guiHelper->m_renderInterface = s_app->m_renderer;
 	s_guiHelper->m_appInterface = s_app;
+	s_guiHelper->m_renderInterface = s_app->m_renderer;
+	s_guiHelper->m_parameterInterface = s_app->m_parameterInterface;
 	
-	MyExampleEntries examples;
+	ExampleEntriesAll examples;
+	//MyExampleEntries examples;
 	examples.initExampleEntries();
 	
 	auto * exampleBrowser = new FrameworkExampleBrowser(&examples);
@@ -650,10 +574,6 @@ int main(int argc, char * argv[])
 			app->m_renderer->updateCamera(app->getUpAxis());
 
 			exampleBrowser->update(framework.timeStep);
-
-			//auto * example = exampleBrowser->getCurrentExample();
-			//if (example != nullptr)
-			//	example->physicsDebugDraw(~0);
 
 			app->swapBuffer();
 		}
