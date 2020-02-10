@@ -3,6 +3,7 @@
 #include "CommonInterfaces/CommonGUIHelperInterface.h"
 
 struct CommonGraphicsApp;
+struct CommonParameterInterface;
 struct CommonRenderInterface;
 
 class FrameworkDebugDrawer;
@@ -12,8 +13,9 @@ struct FrameworkGUIHelperInterface : GUIHelperInterface
 	FrameworkDebugDrawer * m_debugDraw = nullptr;
 	
 // todo : just makes these globals. dear oh dear what a mess Bullit!
-	CommonRenderInterface * m_renderInterface = nullptr;
 	CommonGraphicsApp * m_appInterface = nullptr;
+	CommonRenderInterface * m_renderInterface = nullptr;
+	CommonParameterInterface * m_parameterInterface = nullptr;
 	
 	virtual ~FrameworkGUIHelperInterface() override final;
 

@@ -19,6 +19,14 @@ library bullet3-Examples-Utils
 	depend_library bullet3
 	add_files ../bullet3/examples/Utils/b3Clock.cpp
 	add_files ../bullet3/examples/Utils/b3Clock.h
+	add_files ../bullet3/examples/Utils/b3QuickProf.cpp
+	add_files ../bullet3/examples/Utils/b3QuickProf.h
+	add_files ../bullet3/examples/Utils/b3ResourcePath.cpp
+	add_files ../bullet3/examples/Utils/b3ResourcePath.h
+	add_files ../bullet3/examples/Utils/ChromeTraceUtil.cpp
+	add_files ../bullet3/examples/Utils/ChromeTraceUtil.h
+	add_files ../bullet3/examples/Utils/RobotLoggingUtil.cpp
+	add_files ../bullet3/examples/Utils/RobotLoggingUtil.h
 	add_files ../bullet3/examples/OpenGLWindow/SimpleCamera.cpp
 	add_files ../bullet3/examples/OpenGLWindow/SimpleCamera.h
 	header_path ../bullet3/examples expose
@@ -31,6 +39,7 @@ library bullet3-Examples-FrameworkShared
 	add_files FrameworkDebugDrawer.h
 	add_files FrameworkGuiHelper.cpp
 	add_files FrameworkGuiHelper.h
+	add_files FrameworkParameterInterface.h
 	add_files FrameworkRenderInterface.cpp
 	add_files FrameworkRenderInterface.h
 	add_files FrameworkWindow.cpp
@@ -47,6 +56,46 @@ app bullet3-StandaloneMain-Framework
 	add_files StandaloneMain.cpp
 	compile_definition B3_USE_STANDALONE_EXAMPLE *
 
+library bullet3-ExampleBrowser-ThirdPartyLibs
+	scan_files cpp path ../bullet3/examples/ThirdPartyLibs/stb_image
+	header_path ../bullet3/examples/ThirdPartyLibs expose
+
+library bullet3-ExampleBrowser-ExampleEntries
+	depend_library bullet3
+	depend_library bullet3-Examples-Utils
+	depend_library bullet3-ExampleBrowser-ThirdPartyLibs
+
+	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.cpp
+	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.h
+
+	scan_files cpp path ../bullet3/examples/Benchmarks
+	scan_files cpp path ../bullet3/examples/Blocksolver
+	scan_files cpp path ../bullet3/examples/BulletRobotics
+	scan_files cpp path ../bullet3/examples/Collision
+	scan_files cpp path ../bullet3/examples/Constraints
+	scan_files cpp path ../bullet3/examples/DynamicControlDemo
+	scan_files cpp path ../bullet3/examples/Evolution
+	scan_files cpp path ../bullet3/examples/Experiments
+	scan_files cpp path ../bullet3/examples/ExtendedTutorials
+	scan_files cpp path ../bullet3/examples/ForkLift
+	scan_files cpp path ../bullet3/examples/FractureDemo
+	scan_files cpp path ../bullet3/examples/GyroscopicDemo
+	scan_files cpp path ../bullet3/examples/Heightfield
+	scan_files cpp path ../bullet3/examples/HelloWorld
+	scan_files cpp path ../bullet3/examples/InverseDynamics
+	#scan_files cpp path ../bullet3/examples/InverseKinematics
+	#scan_files cpp path ../bullet3/examples/LuaDemo
+	scan_files cpp path ../bullet3/examples/MultiBody
+	scan_files cpp path ../bullet3/examples/MultiThreadedDemo
+	scan_files cpp path ../bullet3/examples/Planar2D
+	scan_files cpp path ../bullet3/examples/Raycast
+	#scan_files cpp path ../bullet3/examples/RenderingExamples
+	scan_files cpp path ../bullet3/examples/RigidBody
+	scan_files cpp path ../bullet3/examples/RollingFrictionDemo
+	#scan_files cpp path ../bullet3/examples/SoftDemo
+	scan_files cpp path ../bullet3/examples/Tutorial
+	scan_files cpp path ../bullet3/examples/Vehicles
+
 app bullet3-ExampleBrowser-Framework
 	depend_library bullet3
 	depend_library bullet3-Examples-FrameworkShared
@@ -59,4 +108,4 @@ app bullet3-ExampleBrowser-Framework
 	add_files ../bullet3/examples/VoronoiFracture/btConvexConvexMprAlgorithm.cpp
 	add_files ../bullet3/examples/VoronoiFracture/VoronoiFractureDemo.cpp
 
-	add_files ../bullet3/examples/Utils/ChromeTraceUtil.cpp
+	depend_library bullet3-ExampleBrowser-ExampleEntries

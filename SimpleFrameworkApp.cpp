@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include "Bullet3Common/b3Quaternion.h"
+#include "FrameworkParameterInterface.h"
 #include "FrameworkRenderInterface.h"
 #include "FrameworkWindow.h"
 
@@ -44,8 +45,6 @@ static void SimpleResizeCallback(float widthf, float heightf)
 		gApp->m_renderer->resize(width, height);
 }
 
-#if false
-
 static void SimpleKeyboardCallback(int key, int state)
 {
 	if (key == SDLK_ESCAPE && gApp && gApp->m_window)
@@ -72,8 +71,6 @@ static void SimpleWheelCallback(float deltax, float deltay)
 {
 	gApp->defaultWheelCallback(deltax, deltay);
 }
-
-#endif
 
 #if false
 
@@ -259,11 +256,10 @@ SimpleFrameworkApp::SimpleFrameworkApp(
 	
 	m_renderer = new FrameworkRenderInterface();
 
-	m_parameterInterface = nullptr;
+	m_parameterInterface = new FrameworkParameterInterface();
 
 	m_window->setResizeCallback(SimpleResizeCallback);
 
-#if false
 	m_window->setMouseMoveCallback(SimpleMouseMoveCallback);
 	m_window->setMouseButtonCallback(SimpleMouseButtonCallback);
 	m_window->setKeyboardCallback(SimpleKeyboardCallback);
@@ -272,10 +268,9 @@ SimpleFrameworkApp::SimpleFrameworkApp(
 	{
 	#if TODO
 		m_data->m_renderCallbacks = new OpenGL2RenderCallbacks(m_primRenderer);
-	#endif
 		m_data->m_renderCallbacks2 = new MyRenderCallbacks(m_instancingRenderer);
+	#endif
 	}
-#endif
 }
 
 void SimpleFrameworkApp::drawText3D(const char* txt, float position[3], float orientation[4], float color[4], float size, int optionFlag)
@@ -350,6 +345,12 @@ SimpleFrameworkApp::~SimpleFrameworkApp()
 	delete m_data->m_renderCallbacks2;
 	m_data->m_renderCallbacks2 = nullptr;
 */
+
+	delete m_parameterInterface;
+	m_parameterInterface = nullptr;
+	
+	delete m_renderer;
+	m_renderer = nullptr;
 
 	m_window->closeWindow();
 

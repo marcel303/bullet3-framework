@@ -132,8 +132,7 @@ Common2dCanvasInterface* FrameworkGUIHelperInterface::get2dCanvasInterface()
 
 CommonParameterInterface* FrameworkGUIHelperInterface::getParameterInterface()
 {
-	Assert(false);
-	return 0;
+	return m_parameterInterface;
 }
 
 CommonRenderInterface* FrameworkGUIHelperInterface::getRenderInterface()
