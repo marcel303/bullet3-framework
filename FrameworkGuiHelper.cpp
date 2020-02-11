@@ -58,12 +58,15 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 		const btBoxShape * boxShape = (btBoxShape*)collisionShape;
 		const btVector3 halfExtents = boxShape->getHalfExtentsWithMargin();
 		
-		btAlignedObjectArray<float> transformedVertices;
-		transformedVertices.resize(sizeof(cube_vertices) / sizeof(cube_vertices[0]));
-		for (size_t i = 0; i < transformedVertices.size(); ++i)
-			transformedVertices[i] = cube_vertices[i];
+		const int numVertices = sizeof(cube_vertices_textured) / vertexStrideInBytes;
+		const int numIndices = sizeof(cube_indices) / sizeof(cube_indices[0]);
+		const int * indices = cube_indices;
 		
-		const int numVertices = sizeof(cube_vertices) / vertexStrideInBytes;
+		btAlignedObjectArray<float> transformedVertices;
+		transformedVertices.resize(numVertices * 9);
+		for (size_t i = 0; i < transformedVertices.size(); ++i)
+			transformedVertices[i] = cube_vertices_textured[i];
+		
 		for (int i = 0; i < numVertices; ++i)
 		{
 			transformedVertices[i * 9 + 0] *= halfExtents.x();
@@ -74,19 +77,49 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 		const int graphicsShapeId = m_renderInterface->registerShape(
 			&transformedVertices[0],
 			numVertices,
-			cube_indices,
-			sizeof(cube_indices) / sizeof(cube_indices[0]),
+			indices,
+			numIndices,
 			B3_GL_TRIANGLES,
 			0);
+
+		collisionShape->setUserIndex(graphicsShapeId);
+	}
+	else if (collisionShape->getShapeType() == SPHERE_SHAPE_PROXYTYPE)
+	{
+		const btSphereShape * sphereShape = (btSphereShape*)collisionShape;
+		const btScalar radius = sphereShape->getRadius();
+		const btScalar sphereSize = 2. * radius;
+		const btVector3 radiusScale(sphereSize, sphereSize, sphereSize);
+
+		const int numVertices = sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes;
+		const int numIndices = sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]);
+		const int * indices = textured_detailed_sphere_indices;
 		
-	// todo : transform vertices by shape transform
+		btAlignedObjectArray<float> transformedVertices;
+		transformedVertices.resize(numVertices * 9);
+		for (size_t i = 0; i < transformedVertices.size(); ++i)
+			transformedVertices[i] = textured_detailed_sphere_vertices[i];
+		
+		for (int i = 0; i < numVertices; ++i)
+		{
+			transformedVertices[i * 9 + 0] *= radiusScale.x();
+			transformedVertices[i * 9 + 1] *= radiusScale.y();
+			transformedVertices[i * 9 + 2] *= radiusScale.z();
+		}
+		
+		const int graphicsShapeId = m_renderInterface->registerShape(
+			&transformedVertices[0],
+			numVertices,
+			indices,
+			numIndices,
+			B3_GL_TRIANGLES,
+			0);
 
 		collisionShape->setUserIndex(graphicsShapeId);
 	}
 	
 	/*
 	if (collisionShape->getShapeType() == MULTI_SPHERE_SHAPE_PROXYTYPE)
-	if (collisionShape->getShapeType() == SPHERE_SHAPE_PROXYTYPE)
 	if (collisionShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
 	if (collisionShape->getShapeType() == CAPSULE_SHAPE_PROXYTYPE)
 	{
