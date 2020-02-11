@@ -42,6 +42,8 @@ void FrameworkRenderInterface::init()
 
 void FrameworkRenderInterface::updateCamera(int upAxis)
 {
+	camera.setCameraUpAxis(upAxis);
+	
 	Mat4x4 viewMatrix;
 	camera.getCameraViewMatrix(viewMatrix.m_v);
 	viewMatrix = Mat4x4(true).Scale(1, 1, -1).Mul(viewMatrix);
