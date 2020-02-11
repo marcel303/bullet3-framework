@@ -5,15 +5,15 @@
 #include "LinearMath/btVector3.h"
 #include "Vec3.h"
 
-#define BT_LINE_BATCH_SIZE 512
+#define BT_LINE_BATCH_SIZE (1<<12)
 
 ATTRIBUTE_ALIGNED16(class) FrameworkDebugDrawer : public btIDebugDraw
 {
 	int m_debugMode = 0;
 
-	btAlignedObjectArray<btVector3> m_linePoints;
-	btAlignedObjectArray<btVector3> m_lineColors;
-	btAlignedObjectArray<int> m_lineIndices;
+	btVector3 m_linePoints[BT_LINE_BATCH_SIZE*2];
+	btVector3 m_lineColors[BT_LINE_BATCH_SIZE];
+	int m_numLines = 0;
 
 	DefaultColors m_ourColors;
 

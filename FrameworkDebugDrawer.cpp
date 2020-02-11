@@ -25,20 +25,16 @@ void FrameworkDebugDrawer::drawLine(
 	const btVector3 & to,
 	const btVector3 & color)
 {
-	if (m_linePoints.size() >= BT_LINE_BATCH_SIZE)
+	m_linePoints[m_numLines*2+0] = from;
+	m_linePoints[m_numLines*2+1] = to;
+	m_lineColors[m_numLines] = color;
+
+	m_numLines++;
+	
+	if (m_numLines == BT_LINE_BATCH_SIZE)
 	{
 		flushLines();
 	}
-
-	const size_t index = m_linePoints.size();
-	
-	m_linePoints.push_back(from);
-	m_linePoints.push_back(to);
-	m_lineColors.push_back(color);
-	m_lineColors.push_back(color);
-
-	m_lineIndices.push_back(index);
-	m_lineIndices.push_back(index + 1);
 }
 
 void FrameworkDebugDrawer::drawContactPoint(
@@ -49,8 +45,8 @@ void FrameworkDebugDrawer::drawContactPoint(
 	const btVector3 & color)
 {
 	drawLine(PointOnB, PointOnB + normalOnB * distance, color);
-	btVector3 ncolor(0, 0, 0);
-	drawLine(PointOnB, PointOnB + normalOnB * 0.01, ncolor);
+	static const btVector3 ncolor(0, 0, 0);
+	drawLine(PointOnB, PointOnB + normalOnB * 0.01f, ncolor);
 }
 
 void FrameworkDebugDrawer::reportErrorWarning(const char * warningString)
@@ -74,25 +70,22 @@ int FrameworkDebugDrawer::getDebugMode() const
 
 void FrameworkDebugDrawer::flushLines()
 {
-	if (m_linePoints.size() > 0)
+	if (m_numLines > 0)
 	{
 		gxBegin(GX_LINES);
 		{
-			for (size_t i = 0; i < m_lineIndices.size(); ++i)
+			for (int i = 0; i < m_numLines; ++i)
 			{
-				const auto index = m_lineIndices[i];
-				
 				gxColor4f(
-					m_lineColors[index][0],
-					m_lineColors[index][1],
-					m_lineColors[index][2], 1.f);
-				gxVertex3fv(&m_linePoints[index][0]);
+					m_lineColors[i][0],
+					m_lineColors[i][1],
+					m_lineColors[i][2], 1.f);
+				gxVertex3fv(&m_linePoints[i*2+0][0]);
+				gxVertex3fv(&m_linePoints[i*2+1][0]);
 			}
 		}
 		gxEnd();
 		
-		m_linePoints.clear();
-		m_lineColors.clear();
-		m_lineIndices.clear();
+		m_numLines = 0;
 	}
 }
