@@ -35,6 +35,8 @@ library bullet3-Examples-FrameworkShared
 	depend_library bullet3
 	depend_library bullet3-Examples-Utils
 	depend_library framework
+	add_files FrameworkCanvasInterface.cpp
+	add_files FrameworkCanvasInterface.h
 	add_files FrameworkDebugDrawer.cpp
 	add_files FrameworkDebugDrawer.h
 	add_files FrameworkGuiHelper.cpp
@@ -58,6 +60,11 @@ app bullet3-StandaloneMain-Framework
 
 library bullet3-ExampleBrowser-ThirdPartyLibs
 	scan_files cpp path ../bullet3/examples/ThirdPartyLibs/stb_image
+	scan_files cpp path ../bullet3/examples/ThirdPartyLibs/Gwen traverse
+	add_files ../bullet3/examples/ThirdPartyLibs/Wavefront/tiny_obj_loader.cpp
+	add_files ../bullet3/examples/ThirdPartyLibs/Wavefront/tiny_obj_loader.h
+	add_files ../bullet3/examples/ThirdPartyLibs/tinyxml2/tinyxml2.cpp
+	add_files ../bullet3/examples/ThirdPartyLibs/tinyxml2/tinyxml2.h
 	header_path ../bullet3/examples/ThirdPartyLibs expose
 
 library bullet3-ExampleBrowser-ExampleEntries
@@ -68,13 +75,14 @@ library bullet3-ExampleBrowser-ExampleEntries
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.cpp
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.h
 
+	scan_files cpp path ../bullet3/examples/BasicDemo
 	scan_files cpp path ../bullet3/examples/Benchmarks
 	scan_files cpp path ../bullet3/examples/Blocksolver
 	scan_files cpp path ../bullet3/examples/BulletRobotics
-	scan_files cpp path ../bullet3/examples/Collision
+	scan_files cpp path ../bullet3/examples/Collision traverse
 	scan_files cpp path ../bullet3/examples/Constraints
 	scan_files cpp path ../bullet3/examples/DynamicControlDemo
-	scan_files cpp path ../bullet3/examples/Evolution
+	scan_files cpp path ../bullet3/examples/Evolution traverse
 	scan_files cpp path ../bullet3/examples/Experiments
 	scan_files cpp path ../bullet3/examples/ExtendedTutorials
 	scan_files cpp path ../bullet3/examples/ForkLift
@@ -83,7 +91,7 @@ library bullet3-ExampleBrowser-ExampleEntries
 	scan_files cpp path ../bullet3/examples/Heightfield
 	scan_files cpp path ../bullet3/examples/HelloWorld
 	scan_files cpp path ../bullet3/examples/InverseDynamics
-	#scan_files cpp path ../bullet3/examples/InverseKinematics
+	scan_files cpp path ../bullet3/examples/InverseKinematics
 	#scan_files cpp path ../bullet3/examples/LuaDemo
 	scan_files cpp path ../bullet3/examples/MultiBody
 	scan_files cpp path ../bullet3/examples/MultiThreadedDemo
@@ -91,10 +99,18 @@ library bullet3-ExampleBrowser-ExampleEntries
 	scan_files cpp path ../bullet3/examples/Raycast
 	#scan_files cpp path ../bullet3/examples/RenderingExamples
 	scan_files cpp path ../bullet3/examples/RigidBody
+	scan_files cpp path ../bullet3/examples/RoboticsLearning
+	#scan_files cpp path ../bullet3/examples/RobotSimulator
 	scan_files cpp path ../bullet3/examples/RollingFrictionDemo
-	#scan_files cpp path ../bullet3/examples/SoftDemo
+	scan_files cpp path ../bullet3/examples/SoftDemo
 	scan_files cpp path ../bullet3/examples/Tutorial
 	scan_files cpp path ../bullet3/examples/Vehicles
+
+	scan_files cpp path ../bullet3/examples/Importers traverse
+	scan_files cpp path ../bullet3/examples/RenderingExamples traverse
+
+	# for GwenGuiSupport
+	header_path ../bullet3/examples/ExampleBrowser
 
 app bullet3-ExampleBrowser-Framework
 	depend_library bullet3
