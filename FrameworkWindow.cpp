@@ -85,11 +85,12 @@ void FrameworkWindow::startRendering()
 		m_backgroundColor[2] * 255.f,
 		255);
 	projectPerspective3d(90.f, .1f, 1000.f);
-	setDepthTest(true, DEPTH_LESS);
+	pushDepthTest(true, DEPTH_LESS);
 }
 
 void FrameworkWindow::endRendering()
 {
+	popDepthTest();
 	framework.endDraw();
 }
 

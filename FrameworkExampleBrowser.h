@@ -9,19 +9,15 @@ class FrameworkExampleBrowser : public ExampleBrowserInterface
 {
 public:
 	FrameworkExampleBrowser(ExampleEntries * examples);
-	virtual ~FrameworkExampleBrowser();
+	virtual ~FrameworkExampleBrowser() override final;
 
-	virtual CommonExampleInterface * getCurrentExample();
+	virtual CommonExampleInterface * getCurrentExample() override final;
 
-	virtual bool init(int argc, char * argv[]);
+	virtual bool init(int argc, char * argv[]) override final;
 
-	virtual void update(float deltaTime);
+	virtual void update(float deltaTime) override final;
 
-	virtual void updateGraphics();
-
-	virtual bool requestedExit();
-
-	virtual void setSharedMemoryInterface(SharedMemoryInterface * sharedMem);
+	virtual bool requestedExit() override final;
 
 	static void registerFileImporter(const char * extension, CommonExampleInterface::CreateFunc * createFunc);
 };

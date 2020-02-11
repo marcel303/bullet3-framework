@@ -103,6 +103,8 @@ library bullet3-ExampleBrowser-ExampleEntries
 	scan_files cpp path ../bullet3/examples/Vehicles
 	scan_files cpp path ../bullet3/examples/VoronoiFracture
 
+	scan_files h   path ../bullet3/examples traverse
+
 	# for GwenGuiSupport
 	header_path ../bullet3/examples/ExampleBrowser
 
@@ -111,6 +113,7 @@ app bullet3-ExampleBrowser-Framework
 	depend_library bullet3-ExampleBrowser-ExampleEntries
 	depend_library bullet3-FrameworkIntegration
 	depend_library framework
+	depend_library imgui-framework
 	
 	add_files FrameworkExampleBrowser.cpp
 	add_files FrameworkExampleBrowser.h
