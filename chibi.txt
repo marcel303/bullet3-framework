@@ -2,12 +2,16 @@ library bullet3 shared
 	add_files ../bullet3/src/btBulletCollisionAll.cpp
 	add_files ../bullet3/src/btBulletDynamicsAll.cpp
 	add_files ../bullet3/src/btLinearMathAll.cpp
-
-# not sure if this should be in main lib ?
+	
+	# not sure if this should be in main lib ?
 	add_files ../bullet3/src/Bullet3Common/b3AlignedAllocator.cpp
 	add_files ../bullet3/src/Bullet3Common/b3Logging.cpp
 
 	header_path ../bullet3/src expose
+
+library bullet3-softbody shared
+	depend_library bullet3
+	scan_files cpp path ../bullet3/src/BulletSoftBody traverse
 
 app bullet3-BasicDemo
 	depend_library bullet3
@@ -34,6 +38,7 @@ library bullet3-Examples-Utils
 library bullet3-Examples-FrameworkShared
 	depend_library bullet3
 	depend_library bullet3-Examples-Utils
+	depend_library bullet3-softbody
 	depend_library framework
 	add_files FrameworkCanvasInterface.cpp
 	add_files FrameworkCanvasInterface.h
@@ -125,3 +130,5 @@ app bullet3-ExampleBrowser-Framework
 	add_files ../bullet3/examples/VoronoiFracture/VoronoiFractureDemo.cpp
 
 	depend_library bullet3-ExampleBrowser-ExampleEntries
+
+	resource_path ../bullet3/data
