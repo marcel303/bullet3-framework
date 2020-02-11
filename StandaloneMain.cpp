@@ -1,17 +1,16 @@
-#include "framework.h"
 #include "CommonInterfaces/CommonExampleInterface.h"
-#include "CommonInterfaces/CommonGUIHelperInterface.h"
 #include "Utils/b3Clock.h"
-
-#include "SimpleFrameworkApp.h"
-#include "LinearMath/btScalar.h"
 
 #include "FrameworkGuiHelper.h"
 #include "FrameworkRenderInterface.h"
+#include "SimpleFrameworkApp.h"
+
+#include "framework.h"
 
 static CommonExampleInterface * example = nullptr;
 
 static b3MouseMoveCallback prevMouseMoveCallback = nullptr;
+static b3MouseButtonCallback prevMouseButtonCallback = nullptr;
 
 static void OnMouseMove(float x, float y)
 {
@@ -23,8 +22,6 @@ static void OnMouseMove(float x, float y)
 			prevMouseMoveCallback(x, y);
 	}
 }
-
-static b3MouseButtonCallback prevMouseButtonCallback = nullptr;
 
 static void OnMouseDown(int button, int state, float x, float y)
 {
@@ -39,6 +36,8 @@ static void OnMouseDown(int button, int state, float x, float y)
 
 int main(int argc, char * argv[])
 {
+	setupPaths(CHIBI_RESOURCE_PATHS);
+	
 	SimpleFrameworkApp * app = new SimpleFrameworkApp("Bullet Standalone Example", 1024, 768, true);
 
 	prevMouseButtonCallback = app->m_window->getMouseButtonCallback();
@@ -52,7 +51,6 @@ int main(int argc, char * argv[])
 	gui.m_appInterface = app;
 	
 	CommonExampleOptions options(&gui);
-
 	example = StandaloneExampleCreateFunc(options);
 	example->processCommandLineArgs(argc, argv);
 
@@ -69,11 +67,11 @@ int main(int argc, char * argv[])
 		app->m_renderer->init();
 		app->m_renderer->updateCamera(app->getUpAxis());
 
-		btScalar dtSec = btScalar(clock.getTimeInSeconds());
-		if (dtSec < 0.1)
-			dtSec = 0.1;
+		float dt = clock.getTimeInSeconds();
+		if (dt < .1f)
+			dt = .1f;
 
-		example->stepSimulation(dtSec);
+		example->stepSimulation(dt);
 		clock.reset();
 
 		example->physicsDebugDraw(~0);
