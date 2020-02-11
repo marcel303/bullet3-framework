@@ -44,7 +44,7 @@ void FrameworkGUIHelperInterface::syncPhysicsToGraphics2(const GUISyncPosition* 
 
 void FrameworkGUIHelperInterface::render(const btDiscreteDynamicsWorld* rbWorld)
 {
-	Assert(false);
+	m_renderInterface->renderScene();
 }
 
 void FrameworkGUIHelperInterface::createPhysicsDebugDrawer(btDiscreteDynamicsWorld* rbWorld)
@@ -72,24 +72,22 @@ int FrameworkGUIHelperInterface::registerTexture(const unsigned char* texels, in
 
 int FrameworkGUIHelperInterface::registerGraphicsShape(const float* vertices, int numvertices, const int* indices, int numIndices, int primitiveType, int textureId)
 {
-	Assert(false);
-	return 0;
+	return m_renderInterface->registerShape(vertices, numvertices, indices, numIndices, primitiveType, textureId);
 }
 
 int FrameworkGUIHelperInterface::registerGraphicsInstance(int shapeIndex, const float* position, const float* quaternion, const float* color, const float* scaling)
 {
-	Assert(false);
-	return 0;
+	return m_renderInterface->registerGraphicsInstance(shapeIndex, position, quaternion, color, scaling);
 }
 
 void FrameworkGUIHelperInterface::removeAllGraphicsInstances()
 {
-	Assert(false);
+	m_renderInterface->removeAllInstances();
 }
 
 void FrameworkGUIHelperInterface::removeGraphicsInstance(int graphicsUid)
 {
-	Assert(false);
+	m_renderInterface->removeGraphicsInstance(graphicsUid);
 }
 
 void FrameworkGUIHelperInterface::changeRGBAColor(int instanceUid, const double rgbaColor[4])

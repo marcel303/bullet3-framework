@@ -3,6 +3,35 @@
 #include "Debugging.h"
 #include "framework.h"
 
+//
+
+#include "data/engine/ShaderCommon.txt"
+#include "gx_mesh.h"
+#include "Quat.h"
+#include <map>
+
+struct FrameworkGraphicsShape
+{
+	GxVertexBuffer vb;
+	GxIndexBuffer ib;
+	GxMesh mesh;
+};
+
+struct FrameworkGraphicsInstance
+{
+	int shapeId = 0;
+	Mat4x4 transform = Mat4x4(true);
+};
+
+// todo : move to internal data
+std::map<int, FrameworkGraphicsShape*> m_graphicsShapes;
+static int m_nextGraphicsShapeId = 1;
+
+std::map<int, FrameworkGraphicsInstance*> m_graphicsInstances;
+static int m_nextGraphicsInstanceId = 1;
+
+//
+
 FrameworkRenderInterface::~FrameworkRenderInterface()
 {
 }
@@ -21,10 +50,26 @@ void FrameworkRenderInterface::updateCamera(int upAxis)
 
 void FrameworkRenderInterface::removeAllInstances()
 {
+// todo : is this supposed to clear graphics shapes as well ?
+
+	while (!m_graphicsInstances.empty())
+	{
+		removeGraphicsInstance(m_graphicsInstances.begin()->first);
+	}
 }
 
-void FrameworkRenderInterface::removeGraphicsInstance(int instanceUid)
+void FrameworkRenderInterface::removeGraphicsInstance(int id)
 {
+	auto i = m_graphicsInstances.find(id);
+	Assert(i != m_graphicsInstances.end());
+	
+	if (i != m_graphicsInstances.end())
+	{
+		delete i->second;
+		i->second = nullptr;
+		
+		m_graphicsInstances.erase(i);
+	}
 }
 
 const CommonCameraInterface * FrameworkRenderInterface::getActiveCamera() const
@@ -50,7 +95,27 @@ void FrameworkRenderInterface::setShadowMapWorldSize(float worldSize) { }
 void FrameworkRenderInterface::setProjectiveTextureMatrices(const float viewMatrix[16], const float projectionMatrix[16]) { }
 void FrameworkRenderInterface::setProjectiveTexture(bool useProjectiveTexture) { }
 
-void FrameworkRenderInterface::renderScene() { }
+void FrameworkRenderInterface::renderScene()
+{
+	for (auto & i : m_graphicsInstances)
+	{
+		auto * instance = i.second;
+		
+		auto shape_itr = m_graphicsShapes.find(instance->shapeId);
+		Assert(shape_itr != m_graphicsShapes.end());
+		if (shape_itr != m_graphicsShapes.end())
+		{
+			auto * shape = shape_itr->second;
+			
+			gxPushMatrix();
+			gxMultMatrixf(instance->transform.m_v);
+			setColor(colorWhite);
+			shape->mesh.draw();
+			gxPopMatrix();
+		}
+	}
+}
+
 void FrameworkRenderInterface::renderSceneInternal(int renderMode) { }
 
 int FrameworkRenderInterface::getScreenWidth()
@@ -69,8 +134,27 @@ void FrameworkRenderInterface::resize(int width, int height)
 	m_screenHeight = height;
 }
 
-int FrameworkRenderInterface::registerGraphicsInstance(int shapeIndex, const float* position, const float* quaternion, const float* color, const float* scaling) { return 0; }
-int FrameworkRenderInterface::registerGraphicsInstance(int shapeIndex, const double* position, const double* quaternion, const double* color, const double* scaling) { return 0; }
+int FrameworkRenderInterface::registerGraphicsInstance(int shapeIndex, const float* position, const float* quaternion, const float* color, const float* scaling)
+{
+	const int id = m_nextGraphicsInstanceId++;
+	
+	auto *& instance = m_graphicsInstances[id];
+	instance = new FrameworkGraphicsInstance();
+	instance->shapeId = shapeIndex;
+	instance->transform =
+		Mat4x4(true)
+		.Translate(position[0], position[1], position[2])
+		.Rotate(Quat(quaternion[0], quaternion[1], quaternion[2], quaternion[3]))
+		.Scale(scaling[0], scaling[1], scaling[2]);
+	
+	return id;
+}
+
+int FrameworkRenderInterface::registerGraphicsInstance(int shapeIndex, const double* position, const double* quaternion, const double* color, const double* scaling)
+{
+ 	Assert(false);
+ 	return 0;
+}
 
 void FrameworkRenderInterface::drawLines(const float* positions, const float color[4], int numPoints, int pointStrideInBytes, const unsigned int* indices, int numIndices, float pointDrawSize)
 {
@@ -128,13 +212,42 @@ void FrameworkRenderInterface::drawTexturedTriangleMesh(float worldPosition[3], 
 
 int FrameworkRenderInterface::registerShape(const float* vertices, int numvertices, const int* indices, int numIndices, int primitiveType, int textureIndex)
 {
-	Assert(false);
-	return 0;
+	const int id = m_nextGraphicsShapeId++;
+	
+	auto *& shape = m_graphicsShapes[id];
+	shape = new FrameworkGraphicsShape();
+	shape->vb.alloc(vertices, numvertices * sizeof(float) * 9);
+	shape->ib.alloc(indices, numIndices, GX_INDEX_32);
+	
+	const GxVertexInput vsInputs[3] =
+		{
+			{ VS_POSITION,  4, GX_ELEMENT_FLOAT32, false, sizeof(float)*0, sizeof(float)*9 },
+			{ VS_NORMAL,    3, GX_ELEMENT_FLOAT32, false, sizeof(float)*4, sizeof(float)*9 },
+			{ VS_TEXCOORD0, 2, GX_ELEMENT_FLOAT32, false, sizeof(float)*7, sizeof(float)*9 }
+		};
+	
+	shape->mesh.setVertexBuffer(&shape->vb, vsInputs, 3, sizeof(float)*9);
+	shape->mesh.setIndexBuffer(&shape->ib);
+	
+	const GX_PRIMITIVE_TYPE gxPrimitiveType =
+	 	primitiveType == B3_GL_TRIANGLES ? GX_TRIANGLES :
+	 	primitiveType == B3_GL_POINTS ? GX_POINTS :
+	 	(GX_PRIMITIVE_TYPE)-1;
+	
+	if (numIndices > 0)
+		shape->mesh.addPrim(gxPrimitiveType, numIndices, true);
+	else
+		shape->mesh.addPrim(gxPrimitiveType, numvertices, false);
+	
+	return id;
 }
 
 void FrameworkRenderInterface::updateShape(int shapeIndex, const float* vertices)
 {
 	Assert(false);
+	
+	if (shapeIndex <= 0)
+		return;
 }
 
 int FrameworkRenderInterface::registerTexture(const unsigned char* texels, int width, int height, bool flipPixelsY)
