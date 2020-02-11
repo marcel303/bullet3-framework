@@ -5,13 +5,13 @@
 class FrameworkParameterInterface : public CommonParameterInterface
 {
 public:
-	virtual ~FrameworkParameterInterface() override { }
+	virtual ~FrameworkParameterInterface() override final { }
 
-	virtual void registerSliderFloatParameter(SliderParams& params) override { }
-	virtual void registerButtonParameter(ButtonParams& params) override { }
-	virtual void registerComboBox(ComboBoxParams& params) override { }
+	virtual void registerSliderFloatParameter(SliderParams& params) override final { }
+	virtual void registerButtonParameter(ButtonParams& params) override final { }
+	virtual void registerComboBox(ComboBoxParams& params) override final { }
 
-	virtual void syncParameters() override { }
-	virtual void removeAllParameters() override { }
-	virtual void setSliderValue(int sliderIndex, double sliderValue) override { }
+	virtual void syncParameters() override final { }
+	virtual void removeAllParameters() override final { }
+	virtual void setSliderValue(int sliderIndex, double sliderValue) override final { }
 };
