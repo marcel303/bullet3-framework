@@ -15,6 +15,7 @@
 #include "Bullet3Common/b3FileUtils.h"
 
 #include "framework.h"
+#include "FrameworkCanvasInterface.h"
 #include "FrameworkGuiHelper.h"
 #include "FrameworkRenderInterface.h"
 #include "SimpleFrameworkApp.h"
@@ -544,6 +545,7 @@ int main(int argc, char * argv[])
 	s_guiHelper->m_appInterface = s_app;
 	s_guiHelper->m_renderInterface = s_app->m_renderer;
 	s_guiHelper->m_parameterInterface = s_app->m_parameterInterface;
+	s_guiHelper->m_2dCanvasInterface = s_app->m_2dCanvasInterface;
 	
 	ExampleEntriesAll examples;
 	//MyExampleEntries examples;
