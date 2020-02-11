@@ -126,8 +126,7 @@ void FrameworkGUIHelperInterface::removeTexture(int textureUid)
 
 Common2dCanvasInterface* FrameworkGUIHelperInterface::get2dCanvasInterface()
 {
-	Assert(false);
-	return 0;
+	return m_2dCanvasInterface;
 }
 
 CommonParameterInterface* FrameworkGUIHelperInterface::getParameterInterface()

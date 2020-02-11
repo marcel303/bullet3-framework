@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include "Bullet3Common/b3Quaternion.h"
+#include "FrameworkCanvasInterface.h" // todo : rename to 2dCanvasInterface.h
 #include "FrameworkParameterInterface.h"
 #include "FrameworkRenderInterface.h"
 #include "FrameworkWindow.h"
@@ -232,7 +233,7 @@ SimpleFrameworkApp::SimpleFrameworkApp(
 	int maxShapeCapacityInBytes)
 {
 	gApp = this;
-
+	
 	m_data = new SimpleInternalData();
 
 	m_window = new FrameworkWindow();
@@ -257,6 +258,8 @@ SimpleFrameworkApp::SimpleFrameworkApp(
 	m_renderer = new FrameworkRenderInterface();
 
 	m_parameterInterface = new FrameworkParameterInterface();
+	
+	m_2dCanvasInterface = new FrameworkCanvasInterface();
 
 	m_window->setResizeCallback(SimpleResizeCallback);
 
@@ -347,6 +350,9 @@ SimpleFrameworkApp::~SimpleFrameworkApp()
 	delete m_data->m_renderCallbacks2;
 	m_data->m_renderCallbacks2 = nullptr;
 */
+
+	delete m_2dCanvasInterface;
+	m_2dCanvasInterface = nullptr;
 
 	delete m_parameterInterface;
 	m_parameterInterface = nullptr;

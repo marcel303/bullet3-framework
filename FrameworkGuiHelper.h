@@ -2,6 +2,7 @@
 
 #include "CommonInterfaces/CommonGUIHelperInterface.h"
 
+struct Common2dCanvasInterface;
 struct CommonGraphicsApp;
 struct CommonParameterInterface;
 struct CommonRenderInterface;
@@ -16,6 +17,7 @@ struct FrameworkGUIHelperInterface : GUIHelperInterface
 	CommonGraphicsApp * m_appInterface = nullptr;
 	CommonRenderInterface * m_renderInterface = nullptr;
 	CommonParameterInterface * m_parameterInterface = nullptr;
+	Common2dCanvasInterface * m_2dCanvasInterface = nullptr;
 	
 	virtual ~FrameworkGUIHelperInterface() override final;
 
