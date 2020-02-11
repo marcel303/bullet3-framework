@@ -117,6 +117,48 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 
 		collisionShape->setUserIndex(graphicsShapeId);
 	}
+	else if (collisionShape->getShapeType() == CAPSULE_SHAPE_PROXYTYPE)
+	{
+		const btCapsuleShape * capsuleShape = (btCapsuleShape*)collisionShape;
+		int up = capsuleShape->getUpAxis();
+		btScalar halfHeight = capsuleShape->getHalfHeight();
+
+		btScalar radius = capsuleShape->getRadius();
+		btScalar sphereSize = 2. * radius;
+
+		btVector3 radiusScale = btVector3(sphereSize, sphereSize, sphereSize);
+
+		const int numVertices = sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes;
+		const int numIndices = sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]);
+		const int * indices = textured_detailed_sphere_indices;
+		
+		btAlignedObjectArray<float> transformedVertices;
+		transformedVertices.resize(numVertices * 9);
+		for (size_t i = 0; i < transformedVertices.size(); ++i)
+			transformedVertices[i] = textured_detailed_sphere_vertices[i];
+		
+		for (int i = 0; i < numVertices; ++i)
+		{
+			transformedVertices[i * 9 + 0] *= radiusScale.x();
+			transformedVertices[i * 9 + 1] *= radiusScale.y();
+			transformedVertices[i * 9 + 2] *= radiusScale.z();
+			
+			if (transformedVertices[i * 9 + up] > 0)
+				transformedVertices[i * 9 + up] += halfHeight;
+			else
+				transformedVertices[i * 9 + up] -= halfHeight;
+		}
+		
+		const int graphicsShapeId = m_renderInterface->registerShape(
+			&transformedVertices[0],
+			numVertices,
+			indices,
+			numIndices,
+			B3_GL_TRIANGLES,
+			0);
+
+		collisionShape->setUserIndex(graphicsShapeId);
+	}
 	
 	/*
 	if (collisionShape->getShapeType() == MULTI_SPHERE_SHAPE_PROXYTYPE)
