@@ -11,6 +11,17 @@ library bullet3-softbody shared
 	scan_files cpp path ../bullet3/src/BulletSoftBody traverse
 	scan_files h   path ../bullet3/src/BulletSoftBody traverse
 
+library bullet3-extras-serialize-BulletFileLoader shared
+	depend_library bullet3
+	scan_files cpp path ../bullet3/Extras/Serialize/BulletFileLoader
+	scan_files h   path ../bullet3/Extras/Serialize/BulletFileLoader
+
+library bullet3-extras-serialize-BulletWorldImporter shared
+	depend_library bullet3
+	depend_library bullet3-extras-serialize-BulletFileLoader
+	scan_files cpp path ../bullet3/Extras/Serialize/BulletWorldImporter
+	scan_files h   path ../bullet3/Extras/Serialize/BulletWorldImporter
+
 app bullet3-Examples-BasicDemo
 	depend_library bullet3
 	add_files ../bullet3/examples/BasicDemo/BasicExample.cpp
@@ -111,6 +122,7 @@ library bullet3-ExampleBrowser-ExampleEntries
 app bullet3-ExampleBrowser-Framework
 	depend_library bullet3
 	depend_library bullet3-ExampleBrowser-ExampleEntries
+	depend_library bullet3-extras-serialize-BulletWorldImporter
 	depend_library bullet3-FrameworkIntegration
 	depend_library framework
 	depend_library imgui-framework

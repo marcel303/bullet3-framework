@@ -474,7 +474,7 @@ int main(int argc, char * argv[])
 	exampleBrowser->registerFileImporter(".sdf", ImportSDFCreateFunc);
 	exampleBrowser->registerFileImporter(".obj", ImportObjCreateFunc);
 	exampleBrowser->registerFileImporter(".stl", ImportSTLCreateFunc);
-	//exampleBrowser->registerFileImporter(".bullet", SerializeBulletCreateFunc);
+	exampleBrowser->registerFileImporter(".bullet", SerializeBulletCreateFunc);
 
 	if (init)
 	{
