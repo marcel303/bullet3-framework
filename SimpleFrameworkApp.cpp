@@ -5,7 +5,6 @@
 #include "Bullet3Common/b3Vector3.h"
 #include "Bullet3Common/b3Logging.h"
 
-#include <assert.h>
 #include "Bullet3Common/b3Quaternion.h"
 #include "FrameworkCanvasInterface.h" // todo : rename to 2dCanvasInterface.h
 #include "FrameworkParameterInterface.h"
@@ -280,7 +279,7 @@ SimpleFrameworkApp::SimpleFrameworkApp(
 
 void SimpleFrameworkApp::drawText3D(const char* txt, float position[3], float orientation[4], float color[4], float size, int optionFlag)
 {
-	assert(false); // todo
+	Assert(false); // todo
 }
 
 void SimpleFrameworkApp::drawText3D(const char* txt, float worldPosX, float worldPosY, float worldPosZ, float size1)
@@ -300,7 +299,7 @@ void SimpleFrameworkApp::drawText(const char* txt, int posX, int posY, float siz
 
 void SimpleFrameworkApp::drawTexturedRect(float x0, float y0, float x1, float y1, float color[4], float u0, float v0, float u1, float v1, int useRGBA)
 {
-	assert(false); // todo
+	Assert(false); // todo
 }
 
 int SimpleFrameworkApp::registerCubeShape(float halfExtentsX, float halfExtentsY, float halfExtentsZ, int textureIndex, float textureScaling)
