@@ -10,6 +10,7 @@ void FrameworkWindow::createDefaultWindow(int width, int height, const char * ti
 {
 	framework.windowTitle = title;
 	framework.enableDepthBuffer = true;
+	framework.msaaLevel = 4;
 	framework.init(width, height);
 }
 
