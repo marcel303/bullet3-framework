@@ -22,8 +22,21 @@ struct FrameworkGraphicsShape
 struct FrameworkGraphicsInstance
 {
 	int shapeId = 0;
-	Mat4x4 transform = Mat4x4(true);
+	
+	Vec3 position;
+	Vec4 rotation;
+	Vec3 scaling = Vec3(1, 1, 1);
+	
 	Color color = colorWhite;
+	
+	void calculateTransform(Mat4x4 & transform) const
+	{
+		transform =
+			Mat4x4(true)
+			.Translate(position[0], position[1], position[2])
+			.Rotate(Quat(rotation[0], rotation[1], rotation[2], rotation[3]))
+			.Scale(scaling[0], scaling[1], scaling[2]);
+	}
 };
 
 // todo : move to internal data
@@ -161,8 +174,11 @@ void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 		{
 			auto * shape = shape_itr->second;
 			
+			Mat4x4 transform;
+			instance->calculateTransform(transform);
+			
 			gxPushMatrix();
-			gxMultMatrixf(instance->transform.m_v);
+			gxMultMatrixf(transform.m_v);
 			Shader shader("shaders/bullet3-shape");
 			setShader(shader);
 			{
@@ -210,11 +226,9 @@ int FrameworkRenderInterface::registerGraphicsInstance(int shapeId, const float*
 	auto *& instance = m_graphicsInstances[id];
 	instance = new FrameworkGraphicsInstance();
 	instance->shapeId = shapeId;
-	instance->transform =
-		Mat4x4(true)
-		.Translate(position[0], position[1], position[2])
-		.Rotate(Quat(quaternion[0], quaternion[1], quaternion[2], quaternion[3]))
-		.Scale(scaling[0], scaling[1], scaling[2]);
+	instance->position.Set(position[0], position[1], position[2]);
+	instance->rotation.Set(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
+	instance->scaling.Set(scaling[0], scaling[1], scaling[2]);
 	instance->color = Color(color[0], color[1], color[2], color[3]);
 	
 	return id;
@@ -382,10 +396,8 @@ void FrameworkRenderInterface::writeSingleInstanceTransformToCPU(const float* po
 	
 	if (instance != nullptr)
 	{
-	// todo : keep scaling
-		instance->transform = Mat4x4(true)
-			.Translate(position[0], position[1], position[2])
-			.Rotate(Quat(orientation[0], orientation[1], orientation[2], orientation[3]));
+		instance->position.Set(position[0], position[1], position[2]);
+		instance->rotation.Set(orientation[0], orientation[1], orientation[2], orientation[3]);
 	}
 }
 
@@ -411,7 +423,12 @@ void FrameworkRenderInterface::writeSingleInstanceColorToCPU(const double* color
 
 void FrameworkRenderInterface::writeSingleInstanceScaleToCPU(const float* scale, int srcIndex)
 {
-	Assert(false);
+	auto * instance = resolveGraphicsInstance(srcIndex);
+	
+	if (instance != nullptr)
+	{
+		instance->scaling.Set(scale[0], scale[1], scale[2]);
+	}
 }
 
 void FrameworkRenderInterface::writeSingleInstanceScaleToCPU(const double* scale, int srcIndex)
@@ -436,7 +453,6 @@ int FrameworkRenderInterface::getTotalNumInstances() const
 
 void FrameworkRenderInterface::writeTransforms()
 {
-	Assert(false);
 }
 
 void FrameworkRenderInterface::clearZBuffer()

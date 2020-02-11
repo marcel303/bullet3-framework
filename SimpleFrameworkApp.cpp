@@ -15,19 +15,12 @@
 
 struct SimpleInternalData
 {
-	//RenderCallbacks * m_renderCallbacks = nullptr;
-	//RenderCallbacks * m_renderCallbacks2 = nullptr;
-
-	void * m_userPointer = nullptr;
 	int m_upAxis;  //y=1 or z=2 is supported
 	int m_customViewPortWidth;
 	int m_customViewPortHeight;
 	
 	SimpleInternalData()
-		//: m_renderCallbacks(0)
-		//, m_renderCallbacks2(0)
-		: m_userPointer(0)
-		, m_upAxis(1)
+		: m_upAxis(1)
 		, m_customViewPortWidth(-1)
 		, m_customViewPortHeight(-1)
 	{
@@ -71,155 +64,6 @@ static void SimpleWheelCallback(float deltax, float deltay)
 {
 	gApp->defaultWheelCallback(deltax, deltay);
 }
-
-#if false
-
-struct MyRenderCallbacks : public RenderCallbacks
-{
-	b3AlignedObjectArray<unsigned char> m_rgbaTexture;
-	float m_color[4];
-	float m_worldPosition[3];
-	float m_worldOrientation[4];
-
-	MyRenderCallbacks()
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			m_color[i] = 1;
-			m_worldOrientation[i] = 0;
-		}
-		
-		m_worldPosition[0] = 0;
-		m_worldPosition[1] = 0;
-		m_worldPosition[2] = 0;
-
-		m_worldOrientation[0] = 0;
-		m_worldOrientation[1] = 0;
-		m_worldOrientation[2] = 0;
-		m_worldOrientation[3] = 1;
-	}
-	
-	virtual ~MyRenderCallbacks() override
-	{
-		m_rgbaTexture.clear();
-	}
-
-	virtual void setWorldPosition(float pos[3]) override
-	{
-		for (int i = 0; i < 3; i++)
-		{
-			m_worldPosition[i] = pos[i];
-		}
-	}
-
-	virtual void setWorldOrientation(float orn[4]) override
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			m_worldOrientation[i] = orn[i];
-		}
-	}
-
-	virtual void setColorRGBA(float color[4]) override
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			m_color[i] = color[i];
-		}
-	}
-	
-	virtual void updateTexture(sth_texture* texture, sth_glyph* glyph, int textureWidth, int textureHeight) override
-	{
-		if (glyph)
-		{
-			m_rgbaTexture.resize(textureWidth * textureHeight * 3);
-			
-			for (int i = 0; i < textureWidth * textureHeight; i++)
-			{
-				m_rgbaTexture[i * 3 + 0] = texture->m_texels[i];
-				m_rgbaTexture[i * 3 + 1] = texture->m_texels[i];
-				m_rgbaTexture[i * 3 + 2] = texture->m_texels[i];
-			}
-			
-			bool flipPixelsY = false;
-			
-			m_instancingRenderer->updateTexture(m_textureIndex, &m_rgbaTexture[0], flipPixelsY);
-		}
-		else
-		{
-			if (textureWidth && textureHeight)
-			{
-				texture->m_texels = (unsigned char*)malloc(textureWidth * textureHeight);
-				memset(texture->m_texels, 0, textureWidth * textureHeight);
-				if (m_textureIndex < 0)
-				{
-					m_rgbaTexture.resize(textureWidth * textureHeight * 3);
-					bool flipPixelsY = false;
-					m_textureIndex = m_instancingRenderer->registerTexture(&m_rgbaTexture[0], textureWidth, textureHeight, flipPixelsY);
-
-					int strideInBytes = 9 * sizeof(float);
-					int numVertices = sizeof(cube_vertices_textured) / strideInBytes;
-					int numIndices = sizeof(cube_indices) / sizeof(int);
-
-					float halfExtentsX = 1;
-					float halfExtentsY = 1;
-					float halfExtentsZ = 1;
-					float textureScaling = 4;
-
-					b3AlignedObjectArray<GfxVertexFormat1> verts;
-					verts.resize(numVertices);
-					for (int i = 0; i < numVertices; i++)
-					{
-						verts[i].x = halfExtentsX * cube_vertices_textured[i * 9];
-						verts[i].y = halfExtentsY * cube_vertices_textured[i * 9 + 1];
-						verts[i].z = halfExtentsZ * cube_vertices_textured[i * 9 + 2];
-						verts[i].w = cube_vertices_textured[i * 9 + 3];
-						verts[i].nx = cube_vertices_textured[i * 9 + 4];
-						verts[i].ny = cube_vertices_textured[i * 9 + 5];
-						verts[i].nz = cube_vertices_textured[i * 9 + 6];
-						verts[i].u = cube_vertices_textured[i * 9 + 7] * textureScaling;
-						verts[i].v = cube_vertices_textured[i * 9 + 8] * textureScaling;
-					}
-
-					int shapeId = m_instancingRenderer->registerShape(&verts[0].x, numVertices, cube_indices, numIndices, B3_GL_TRIANGLES, m_textureIndex);
-					b3Vector3 pos = b3MakeVector3(0, 0, 0);
-					b3Quaternion orn(0, 0, 0, 1);
-					b3Vector4 color = b3MakeVector4(1, 1, 1, 1);
-					b3Vector3 scaling = b3MakeVector3(.1, .1, .1);
-					//m_instancingRenderer->registerGraphicsInstance(shapeId, pos, orn, color, scaling);
-					m_instancingRenderer->writeTransforms();
-				}
-				else
-				{
-					b3Assert(0);
-				}
-			}
-			else
-			{
-				delete texture->m_texels;
-				texture->m_texels = 0;
-				//there is no m_instancingRenderer->freeTexture (yet), all textures are released at reset/deletion of the renderer
-			}
-		}
-	}
-	
-	virtual void render(sth_texture* texture)
-	{
-		int index = 0;
-
-		float width = 1;
-		b3AlignedObjectArray<unsigned int> indices;
-		indices.resize(texture->nverts);
-		for (int i = 0; i < indices.size(); i++)
-		{
-			indices[i] = i;
-		}
-
-		m_instancingRenderer->drawTexturedTriangleMesh(m_worldPosition, m_worldOrientation, &texture->newverts[0].position.p[0], texture->nverts, &indices[0], indices.size(), m_color, m_textureIndex);
-	}
-};
-
-#endif
 
 SimpleFrameworkApp::SimpleFrameworkApp(
 	const char * title,
@@ -267,14 +111,40 @@ SimpleFrameworkApp::SimpleFrameworkApp(
 	m_window->setKeyboardCallback(SimpleKeyboardCallback);
 	m_window->setWheelCallback(SimpleWheelCallback);
 
-	{
-	#if TODO
-		m_data->m_renderCallbacks = new OpenGL2RenderCallbacks(m_primRenderer);
-		m_data->m_renderCallbacks2 = new MyRenderCallbacks(m_instancingRenderer);
-	#endif
-	}
-	
 	m_wheelMultiplier = .1f;
+}
+
+// todo : optimize text drawing. currently it does too many state switches
+
+static void beginTextDrawing()
+{
+	gxMatrixMode(GX_PROJECTION);
+	gxPushMatrix();
+	gxMatrixMode(GX_MODELVIEW);
+	gxPushMatrix();
+	
+	//
+	
+	projectScreen2d();
+	pushDepthTest(false, DEPTH_LESS);
+	pushBlend(BLEND_ALPHA);
+	
+	setFont("calibri.ttf");
+}
+
+static void endTextDrawing()
+{
+	popDepthTest();
+	popBlend();
+
+	setTransform(TRANSFORM_3D);
+	
+	//
+	
+	gxMatrixMode(GX_PROJECTION);
+	gxPopMatrix();
+	gxMatrixMode(GX_MODELVIEW);
+	gxPopMatrix();
 }
 
 void SimpleFrameworkApp::drawText3D(const char* txt, float position[3], float orientation[4], float color[4], float size, int optionFlag)
@@ -284,28 +154,12 @@ void SimpleFrameworkApp::drawText3D(const char* txt, float position[3], float or
 	
 	if (w > 0.f)
 	{
-		gxMatrixMode(GX_PROJECTION);
-		gxPushMatrix();
-		gxMatrixMode(GX_MODELVIEW);
-		gxPushMatrix();
+		beginTextDrawing();
 		{
-			projectScreen2d();
-			pushDepthTest(false, DEPTH_LESS);
-			pushBlend(BLEND_ALPHA);
-			
-			setFont("calibri.ttf");
-			gxColor4fv(color);
+			::setColorf(color[0], color[1], color[2], color[3]);
 			::drawText(p[0], p[1], size * 12.f, 0, 0, "%s", txt);
-			
-			popDepthTest();
-			popBlend();
-			
-			setTransform(TRANSFORM_3D);
 		}
-		gxMatrixMode(GX_PROJECTION);
-		gxPopMatrix();
-		gxMatrixMode(GX_MODELVIEW);
-		gxPopMatrix();
+		endTextDrawing();
 	}
 }
 
@@ -320,27 +174,51 @@ void SimpleFrameworkApp::drawText3D(const char* txt, float worldPosX, float worl
 
 void SimpleFrameworkApp::drawText(const char* txt, int posX, int posY, float size, float colorRGBA[4])
 {
-	::setColorf(colorRGBA[0], colorRGBA[1], colorRGBA[2], colorRGBA[3]);
-	::drawText(posX, posY, size, +1, -1, "%s", txt);
+	beginTextDrawing();
+	{
+		::setColorf(colorRGBA[0], colorRGBA[1], colorRGBA[2], colorRGBA[3]);
+		::drawText(posX, posY, size, +1, -1, "%s", txt);
+	}
+	endTextDrawing();
 }
 
 void SimpleFrameworkApp::drawTexturedRect(float x0, float y0, float x1, float y1, float color[4], float u0, float v0, float u1, float v1, int useRGBA)
 {
-	Assert(false); // todo
+	beginTextDrawing();
+	{
+	// todo : use custom uv's
+	// todo : honor useRGBA
+		Assert(false);
+		
+		::setColorf(color[0], color[1], color[2], color[3]);
+		drawRect(x0, y0, x1, y1);
+	}
+	endTextDrawing();
 }
 
 int SimpleFrameworkApp::registerCubeShape(float halfExtentsX, float halfExtentsY, float halfExtentsZ, int textureIndex, float textureScaling)
 {
+	Assert(false);
+	
 	return 0;
 }
 
 void SimpleFrameworkApp::registerGrid(int cells_x, int cells_z, float color0[4], float color1[4])
 {
+	Assert(false);
 }
 
 int SimpleFrameworkApp::registerGraphicsUnitSphereShape(EnumSphereLevelOfDetail lod, int textureId)
 {
-	return 0;
+	const int vertexStrideInBytes = 9 * sizeof(float);
+
+	return m_renderer->registerShape(
+		textured_detailed_sphere_vertices,
+		sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes,
+		textured_detailed_sphere_indices,
+		sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]),
+		B3_GL_TRIANGLES,
+		textureId);
 }
 
 void SimpleFrameworkApp::drawGrid(DrawGridData data)
@@ -369,14 +247,6 @@ void SimpleFrameworkApp::setBackgroundColor(float red, float green, float blue)
 
 SimpleFrameworkApp::~SimpleFrameworkApp()
 {
-/*
-	delete m_data->m_renderCallbacks;
-	m_data->m_renderCallbacks = nullptr;
-
-	delete m_data->m_renderCallbacks2;
-	m_data->m_renderCallbacks2 = nullptr;
-*/
-
 	delete m_2dCanvasInterface;
 	m_2dCanvasInterface = nullptr;
 
