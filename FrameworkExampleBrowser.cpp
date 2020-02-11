@@ -28,11 +28,11 @@ static CommonGraphicsApp * s_app = nullptr;
 static CommonWindowInterface * s_window = nullptr;
 static FrameworkGUIHelperInterface * s_guiHelper = nullptr;
 
-static bool gEnableDefaultKeyboardShortcuts = true;
 static CommonExampleInterface * sCurrentDemo = nullptr;
 static float gFixedTimeStep = 0.f;
 static class ExampleEntries * gAllExamples = nullptr;
 
+static bool inputIsCaptured = false;
 static bool visualWireframe = true;
 static bool renderVisualGeometry = true;
 static bool renderGrid = true;
@@ -109,19 +109,19 @@ static void deleteDemo()
 //
 
 static b3KeyboardCallback prevKeyboardCallback = nullptr;
+static b3MouseMoveCallback prevMouseMoveCallback = nullptr;
+static b3MouseButtonCallback prevMouseButtonCallback = nullptr;
 
 void MyKeyboardCallback(int key, int state)
 {
 	//b3Printf("key=%d, state=%d", key, state);
 	
-	bool handled = false;
-	
-	if (!handled && sCurrentDemo != nullptr)
+	if (inputIsCaptured == false && sCurrentDemo != nullptr)
 	{
-		handled = sCurrentDemo->keyboardCallback(key, state);
+		inputIsCaptured = sCurrentDemo->keyboardCallback(key, state);
 	}
 
-	if (gEnableDefaultKeyboardShortcuts)
+	if (inputIsCaptured == false)
 	{
 		if (key == 's' && state)
 		{
@@ -210,41 +210,26 @@ void MyKeyboardCallback(int key, int state)
 		}
 	}
 	
-	if (prevKeyboardCallback)
+	if (inputIsCaptured == false && prevKeyboardCallback != nullptr)
 		prevKeyboardCallback(key, state);
 }
 
-static b3MouseMoveCallback prevMouseMoveCallback = nullptr;
-
 static void MyMouseMoveCallback(float x, float y)
 {
-	bool handled = false;
+	if (inputIsCaptured == false && sCurrentDemo != nullptr)
+		inputIsCaptured = sCurrentDemo->mouseMoveCallback(x, y);
 	
-	if (sCurrentDemo != nullptr)
-		handled = sCurrentDemo->mouseMoveCallback(x, y);
-	
-	if (!handled)
-	{
-		if (prevMouseMoveCallback)
-			prevMouseMoveCallback(x, y);
-	}
+	if (inputIsCaptured == false && prevMouseMoveCallback != nullptr)
+		prevMouseMoveCallback(x, y);
 }
-
-static b3MouseButtonCallback prevMouseButtonCallback = nullptr;
 
 static void MyMouseButtonCallback(int button, int state, float x, float y)
 {
-	bool handled = false;
-	
-	//try picking first
-	if (sCurrentDemo != nullptr)
-		handled = sCurrentDemo->mouseButtonCallback(button, state, x, y);
+	if (inputIsCaptured == false && sCurrentDemo != nullptr)
+		inputIsCaptured = sCurrentDemo->mouseButtonCallback(button, state, x, y);
 
-	if (!handled)
-	{
-		if (prevMouseButtonCallback)
-			prevMouseButtonCallback(button, state, x, y);
-	}
+	if (inputIsCaptured == false && prevMouseButtonCallback != nullptr)
+		prevMouseButtonCallback(button, state, x, y);
 }
 
 //
@@ -448,6 +433,78 @@ void FrameworkExampleBrowser::update(float deltaTime)
 
 //
 
+static void doImGui(FrameworkImGuiContext & guiContext)
+{
+	guiContext.processBegin(framework.timeStep, s_app->m_window->getWidth(), s_app->m_window->getHeight(), inputIsCaptured);
+	{
+		if (ImGui::BeginMainMenuBar())
+		{
+			if (ImGui::BeginMenu("Example"))
+			{
+				bool isInsideSubMenu = false;
+				bool submenuIsVisible = false;
+				
+				for (int i = 0; i < gAllExamples->getNumRegisteredExamples(); ++i)
+				{
+					const char * name = gAllExamples->getExampleName(i);
+					const auto & createFunc = gAllExamples->getExampleCreateFunc(i);
+					
+					if (createFunc != nullptr)
+					{
+						if (isInsideSubMenu == false || submenuIsVisible)
+						{
+							if (ImGui::MenuItem(name))
+								selectDemo(i);
+						}
+					}
+					else
+					{
+						if (isInsideSubMenu)
+						{
+							if (submenuIsVisible)
+								ImGui::EndMenu();
+							isInsideSubMenu = false;
+						}
+						
+						submenuIsVisible = ImGui::BeginMenu(name);
+						isInsideSubMenu = true;
+					}
+				}
+				
+				if (isInsideSubMenu && submenuIsVisible)
+					ImGui::EndMenu();
+				
+				ImGui::EndMenu();
+			}
+		}
+		ImGui::EndMainMenuBar();
+		
+		ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
+		if (ImGui::Begin("Example Browser"))
+		{
+			for (int i = 0; i < gAllExamples->getNumRegisteredExamples(); ++i)
+			{
+				const char * name = gAllExamples->getExampleName(i);
+				const auto & createFunc = gAllExamples->getExampleCreateFunc(i);
+				
+				if (createFunc != nullptr)
+				{
+					if (ImGui::Button(name))
+						selectDemo(i);
+				}
+				else
+				{
+					ImGui::Text("%s", name);
+				}
+			}
+		}
+		ImGui::End();
+	}
+	guiContext.processEnd();
+}
+
+//
+
 int main(int argc, char * argv[])
 {
 	setupPaths(CHIBI_RESOURCE_PATHS);
@@ -488,6 +545,10 @@ int main(int argc, char * argv[])
 			if (app->m_window->requestedExit())
 				break;
 			
+			inputIsCaptured = false;
+			
+			doImGui(guiContext);
+			
 			for (auto & droppedFile : framework.droppedFiles)
 			{
 				openFileDemo(droppedFile.c_str());
@@ -499,33 +560,6 @@ int main(int argc, char * argv[])
 			exampleBrowser->update(framework.timeStep);
 
 			//
-			
-			bool inputIsCaptured = false;
-			
-			guiContext.processBegin(framework.timeStep, app->m_window->getWidth(), app->m_window->getHeight(), inputIsCaptured);
-			{
-				if (ImGui::Begin("Example Browser"))
-				{
-					int current_indent = 0;
-					for (int i = 0; i < gAllExamples->getNumRegisteredExamples(); ++i)
-					{
-						const char * name = gAllExamples->getExampleName(i);
-						const auto & createFunc = gAllExamples->getExampleCreateFunc(i);
-						
-						if (createFunc != nullptr)
-						{
-							if (ImGui::Button(name))
-								selectDemo(i);
-						}
-						else
-						{
-							ImGui::Text("%s", name);
-						}
-					}
-				}
-				ImGui::End();
-			}
-			guiContext.processEnd();
 			
 			pushBlend(BLEND_ALPHA);
 			pushDepthTest(false, DEPTH_LESS);

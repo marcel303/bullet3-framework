@@ -35,20 +35,20 @@ struct FrameworkGUIHelperInterface : GUIHelperInterface
 
 	virtual int registerTexture(const unsigned char* texels, int width, int height) override final;
 	virtual int registerGraphicsShape(const float* vertices, int numvertices, const int* indices, int numIndices, int primitiveType, int textureId) override final;
-	virtual int registerGraphicsInstance(int shapeIndex, const float* position, const float* quaternion, const float* color, const float* scaling) override final;
+	virtual int registerGraphicsInstance(int shapeId, const float* position, const float* quaternion, const float* color, const float* scaling) override final;
 	
 	virtual void removeAllGraphicsInstances() override final;
-	virtual void removeGraphicsInstance(int graphicsUid) override final;
+	virtual void removeGraphicsInstance(int graphicsId) override final;
 	
-	virtual void changeRGBAColor(int instanceUid, const double rgbaColor[4]) override final;
+	virtual void changeRGBAColor(int instanceId, const double rgbaColor[4]) override final;
 	
-	virtual void changeSpecularColor(int instanceUid, const double specularColor[3]) override final;
+	virtual void changeSpecularColor(int instanceId, const double specularColor[3]) override final;
 	virtual void changeTexture(int textureUniqueId, const unsigned char* rgbTexels, int width, int height) override final;
 
-	virtual int getShapeIndexFromInstance(int instanceUid) override final;
+	virtual int getShapeIndexFromInstance(int instanceId) override final;
 	
-	virtual void replaceTexture(int shapeIndex, int textureUid) override final;
-	virtual void removeTexture(int textureUid) override final;
+	virtual void replaceTexture(int shapeId, int textureId) override final;
+	virtual void removeTexture(int textureId) override final;
 	
 	virtual Common2dCanvasInterface* get2dCanvasInterface() override final;
 	virtual CommonParameterInterface* getParameterInterface() override final;

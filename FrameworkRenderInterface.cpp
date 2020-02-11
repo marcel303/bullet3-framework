@@ -15,12 +15,15 @@ struct FrameworkGraphicsShape
 	GxVertexBuffer vb;
 	GxIndexBuffer ib;
 	GxMesh mesh;
+	
+	GxTextureId textureId = 0;
 };
 
 struct FrameworkGraphicsInstance
 {
 	int shapeId = 0;
 	Mat4x4 transform = Mat4x4(true);
+	Color color = colorWhite;
 };
 
 // todo : move to internal data
@@ -32,12 +35,19 @@ static int m_nextGraphicsInstanceId = 1;
 
 //
 
+void FrameworkRenderInterface::calculateViewMatrix(Mat4x4 & viewMatrix) const
+{
+	camera.getCameraViewMatrix(viewMatrix.m_v);
+	viewMatrix = Mat4x4(true).Scale(1, 1, -1).Mul(viewMatrix);
+}
+
 FrameworkRenderInterface::~FrameworkRenderInterface()
 {
 }
 
 void FrameworkRenderInterface::init()
 {
+	light.position.Set(-50, 30, 40);
 }
 
 void FrameworkRenderInterface::updateCamera(int upAxis)
@@ -45,8 +55,7 @@ void FrameworkRenderInterface::updateCamera(int upAxis)
 	camera.setCameraUpAxis(upAxis);
 	
 	Mat4x4 viewMatrix;
-	camera.getCameraViewMatrix(viewMatrix.m_v);
-	viewMatrix = Mat4x4(true).Scale(1, 1, -1).Mul(viewMatrix);
+	calculateViewMatrix(viewMatrix);
 	gxSetMatrixf(GX_MODELVIEW, viewMatrix.m_v);
 }
 
@@ -89,8 +98,16 @@ void FrameworkRenderInterface::setActiveCamera(CommonCameraInterface * cam)
 	Assert(false);
 }
 
-void FrameworkRenderInterface::setLightPosition(const float lightPos[3]) { }
-void FrameworkRenderInterface::setLightPosition(const double lightPos[3]) { }
+void FrameworkRenderInterface::setLightPosition(const float lightPos[3])
+{
+	light.position.Set(lightPos[0], lightPos[1], lightPos[2]);
+}
+
+void FrameworkRenderInterface::setLightPosition(const double lightPos[3])
+{
+	Assert(false);
+}
+
 void FrameworkRenderInterface::setShadowMapResolution(int shadowMapResolution) { }
 void FrameworkRenderInterface::setShadowMapWorldSize(float worldSize) { }
 
@@ -99,6 +116,11 @@ void FrameworkRenderInterface::setProjectiveTexture(bool useProjectiveTexture) {
 
 void FrameworkRenderInterface::renderScene()
 {
+	Mat4x4 viewMatrix;
+	calculateViewMatrix(viewMatrix);
+	
+	const Vec3 lightPosition_view = viewMatrix.Mul4(light.position);
+	
 	for (auto & i : m_graphicsInstances)
 	{
 		auto * instance = i.second;
@@ -111,8 +133,25 @@ void FrameworkRenderInterface::renderScene()
 			
 			gxPushMatrix();
 			gxMultMatrixf(instance->transform.m_v);
-			setColor(colorWhite);
-			shape->mesh.draw();
+			Shader shader("shaders/bullet3-shape");
+			setShader(shader);
+			{
+				const bool hasTex = shape->textureId != 0 && shape->textureId != (GxTextureId)-1;
+				
+				shader.setTexture("u_tex", 0, hasTex ? shape->textureId : 0, true, true);
+				shader.setImmediate("u_hasTex", hasTex ? 1.f : 0.f);
+				shader.setImmediate("u_color",
+					instance->color.r,
+					instance->color.g,
+					instance->color.b,
+					instance->color.a);
+					shader.setImmediate("u_lightPosition_view",
+						lightPosition_view[0],
+						lightPosition_view[1],
+						lightPosition_view[2]);
+				shape->mesh.draw();
+			}
+			clearShader();
 			gxPopMatrix();
 		}
 	}
@@ -136,23 +175,24 @@ void FrameworkRenderInterface::resize(int width, int height)
 	m_screenHeight = height;
 }
 
-int FrameworkRenderInterface::registerGraphicsInstance(int shapeIndex, const float* position, const float* quaternion, const float* color, const float* scaling)
+int FrameworkRenderInterface::registerGraphicsInstance(int shapeId, const float* position, const float* quaternion, const float* color, const float* scaling)
 {
 	const int id = m_nextGraphicsInstanceId++;
 	
 	auto *& instance = m_graphicsInstances[id];
 	instance = new FrameworkGraphicsInstance();
-	instance->shapeId = shapeIndex;
+	instance->shapeId = shapeId;
 	instance->transform =
 		Mat4x4(true)
 		.Translate(position[0], position[1], position[2])
 		.Rotate(Quat(quaternion[0], quaternion[1], quaternion[2], quaternion[3]))
 		.Scale(scaling[0], scaling[1], scaling[2]);
+	instance->color = Color(color[0], color[1], color[2], color[3]);
 	
 	return id;
 }
 
-int FrameworkRenderInterface::registerGraphicsInstance(int shapeIndex, const double* position, const double* quaternion, const double* color, const double* scaling)
+int FrameworkRenderInterface::registerGraphicsInstance(int shapeId, const double* position, const double* quaternion, const double* color, const double* scaling)
 {
  	Assert(false);
  	return 0;
@@ -163,11 +203,14 @@ void FrameworkRenderInterface::drawLines(const float* positions, const float col
 	gxColor4fv(color);
 	gxBegin(GX_LINES);
 	{
+		const uint8_t * positions_mem = (uint8_t*)positions;
+		
 		for (int i = 0; i < numIndices; ++i)
 		{
 			const int index = indices[i];
 			
-			const float * position = (float*)(((uint8_t*)positions) + index * pointStrideInBytes);
+			const uint8_t * position_ptr = positions_mem + index * pointStrideInBytes;
+			const float * position = (float*)position_ptr;
 			
 			gxVertex4fv(position);
 		}
@@ -207,12 +250,12 @@ void FrameworkRenderInterface::drawPoint(const double* position, const double co
 	Assert(false);
 }
 
-void FrameworkRenderInterface::drawTexturedTriangleMesh(float worldPosition[3], float worldOrientation[4], const float* vertices, int numvertices, const unsigned int* indices, int numIndices, float color[4], int textureIndex, int vertexLayout)
+void FrameworkRenderInterface::drawTexturedTriangleMesh(float worldPosition[3], float worldOrientation[4], const float* vertices, int numvertices, const unsigned int* indices, int numIndices, float color[4], int textureId, int vertexLayout)
 {
 	Assert(false);
 }
 
-int FrameworkRenderInterface::registerShape(const float* vertices, int numvertices, const int* indices, int numIndices, int primitiveType, int textureIndex)
+int FrameworkRenderInterface::registerShape(const float* vertices, int numvertices, const int* indices, int numIndices, int primitiveType, int textureId)
 {
 	const int id = m_nextGraphicsShapeId++;
 	
@@ -241,41 +284,51 @@ int FrameworkRenderInterface::registerShape(const float* vertices, int numvertic
 	else
 		shape->mesh.addPrim(gxPrimitiveType, numvertices, false);
 	
+	shape->textureId = textureId;
+	
 	return id;
 }
 
-void FrameworkRenderInterface::updateShape(int shapeIndex, const float* vertices)
+void FrameworkRenderInterface::updateShape(int shapeId, const float* vertices)
 {
 	Assert(false);
 	
-	if (shapeIndex <= 0)
+	if (shapeId <= 0)
 		return;
 }
 
 int FrameworkRenderInterface::registerTexture(const unsigned char* texels, int width, int height, bool flipPixelsY)
 {
-	Assert(false);
-	return 0;
+	return createTextureFromRGB8(texels, width, height, true, true);
 }
 
-void FrameworkRenderInterface::updateTexture(int textureIndex, const unsigned char* texels, bool flipPixelsY)
+void FrameworkRenderInterface::updateTexture(int textureId, const unsigned char* texels, bool flipPixelsY)
 {
 	Assert(false);
 }
 
-void FrameworkRenderInterface::activateTexture(int textureIndex)
+void FrameworkRenderInterface::activateTexture(int textureId)
 {
-	Assert(false);
+	gxSetTexture(textureId);
 }
 
-void FrameworkRenderInterface::replaceTexture(int shapeIndex, int textureIndex)
+void FrameworkRenderInterface::replaceTexture(int shapeId, int textureId)
 {
-	Assert(false);
+	auto i = m_graphicsShapes.find(shapeId);
+	Assert(i != m_graphicsShapes.end());
+	if (i != m_graphicsShapes.end())
+	{
+		auto * shape = i->second;
+		
+		shape->textureId = textureId;
+	}
 }
 
-void FrameworkRenderInterface::removeTexture(int textureIndex)
+void FrameworkRenderInterface::removeTexture(int id)
 {
-	Assert(false);
+	GxTextureId textureId = id;
+	
+	freeTexture(textureId);
 }
 
 void FrameworkRenderInterface::setPlaneReflectionShapeIndex(int index)
@@ -283,7 +336,7 @@ void FrameworkRenderInterface::setPlaneReflectionShapeIndex(int index)
 	Assert(false);
 }
 
-int FrameworkRenderInterface::getShapeIndexFromInstance(int srcIndex)
+int FrameworkRenderInterface::getShapeIndexFromInstance(int instanceId)
 {
 	return -1;
 }

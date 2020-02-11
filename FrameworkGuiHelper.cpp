@@ -60,14 +60,14 @@ void FrameworkGUIHelperInterface::createPhysicsDebugDrawer(btDiscreteDynamicsWor
 	rbWorld->setDebugDrawer(m_debugDraw);
 
 	m_debugDraw->setDebugMode(
-		btIDebugDraw::DBG_DrawWireframe + btIDebugDraw::DBG_DrawAabb
+		btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb
 		//btIDebugDraw::DBG_DrawContactPoints
 	);
 }
 
 int FrameworkGUIHelperInterface::registerTexture(const unsigned char* texels, int width, int height)
 {
-	return createTextureFromRGBA8(texels, width, height, true, true);
+	return m_renderInterface->registerTexture(texels, width, height);
 }
 
 int FrameworkGUIHelperInterface::registerGraphicsShape(const float* vertices, int numvertices, const int* indices, int numIndices, int primitiveType, int textureId)
@@ -75,9 +75,9 @@ int FrameworkGUIHelperInterface::registerGraphicsShape(const float* vertices, in
 	return m_renderInterface->registerShape(vertices, numvertices, indices, numIndices, primitiveType, textureId);
 }
 
-int FrameworkGUIHelperInterface::registerGraphicsInstance(int shapeIndex, const float* position, const float* quaternion, const float* color, const float* scaling)
+int FrameworkGUIHelperInterface::registerGraphicsInstance(int shapeId, const float* position, const float* quaternion, const float* color, const float* scaling)
 {
-	return m_renderInterface->registerGraphicsInstance(shapeIndex, position, quaternion, color, scaling);
+	return m_renderInterface->registerGraphicsInstance(shapeId, position, quaternion, color, scaling);
 }
 
 void FrameworkGUIHelperInterface::removeAllGraphicsInstances()
@@ -85,41 +85,40 @@ void FrameworkGUIHelperInterface::removeAllGraphicsInstances()
 	m_renderInterface->removeAllInstances();
 }
 
-void FrameworkGUIHelperInterface::removeGraphicsInstance(int graphicsUid)
+void FrameworkGUIHelperInterface::removeGraphicsInstance(int graphicsId)
 {
-	m_renderInterface->removeGraphicsInstance(graphicsUid);
+	m_renderInterface->removeGraphicsInstance(graphicsId);
 }
 
-void FrameworkGUIHelperInterface::changeRGBAColor(int instanceUid, const double rgbaColor[4])
+void FrameworkGUIHelperInterface::changeRGBAColor(int instanceId, const double rgbaColor[4])
 {
 	Assert(false);
 }
 
-void FrameworkGUIHelperInterface::changeSpecularColor(int instanceUid, const double specularColor[3])
+void FrameworkGUIHelperInterface::changeSpecularColor(int instanceId, const double specularColor[3])
 {
 	Assert(false);
 }
 
-void FrameworkGUIHelperInterface::changeTexture(int textureUniqueId, const unsigned char* rgbTexels, int width, int height)
+void FrameworkGUIHelperInterface::changeTexture(int textureId, const unsigned char * texels, int width, int height)
 {
-	Assert(false);
+	// todo : what about width and height ?
+	m_renderInterface->updateTexture(textureId, texels);
 }
 
-int FrameworkGUIHelperInterface::getShapeIndexFromInstance(int instanceUid)
+int FrameworkGUIHelperInterface::getShapeIndexFromInstance(int instanceId)
 {
-	Assert(false);
-	return -1;
+	return m_renderInterface->getShapeIndexFromInstance(instanceId);
 }
 
-void FrameworkGUIHelperInterface::replaceTexture(int shapeIndex, int textureUid)
+void FrameworkGUIHelperInterface::replaceTexture(int shapeId, int textureId)
 {
-	Assert(false);
+	m_renderInterface->replaceTexture(shapeId, textureId);
 }
 
-void FrameworkGUIHelperInterface::removeTexture(int textureUid)
+void FrameworkGUIHelperInterface::removeTexture(int id)
 {
-	GxTextureId temp = textureUid;
-	freeTexture(temp);
+	m_renderInterface->removeTexture(id);
 }
 
 Common2dCanvasInterface* FrameworkGUIHelperInterface::get2dCanvasInterface()

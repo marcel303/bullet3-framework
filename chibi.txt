@@ -64,6 +64,7 @@ library bullet3-FrameworkIntegration
 	add_files SimpleFrameworkApp.h
 	add_files SimpleCamera.cpp
 	add_files SimpleCamera.h
+	resource_path data
 
 app bullet3-StandaloneMain-Framework
 	depend_library bullet3

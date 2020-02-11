@@ -2,6 +2,9 @@
 
 #include "CommonInterfaces/CommonRenderInterface.h"
 #include "OpenGLWindow/SimpleCamera.h"
+#include "Vec3.h"
+
+class Mat4x4;
 
 class FrameworkRenderInterface : public CommonRenderInterface
 {
@@ -11,6 +14,13 @@ private:
 	int m_screenWidth = 0;
 	int m_screenHeight = 0;
 	
+	struct
+	{
+		Vec3 position;
+	} light;
+	
+	void calculateViewMatrix(Mat4x4 & result) const;
+	
 public:
 	virtual ~FrameworkRenderInterface() override final;
 	
@@ -19,7 +29,7 @@ public:
 	virtual void updateCamera(int upAxis) override final;
 	
 	virtual void removeAllInstances() override final;
-	virtual void removeGraphicsInstance(int instanceUid) override final;
+	virtual void removeGraphicsInstance(int instanceId) override final;
 
 	virtual const CommonCameraInterface* getActiveCamera() const override final;
 	
@@ -43,8 +53,8 @@ public:
 
 	virtual void resize(int width, int height) override final;
 
-	virtual int registerGraphicsInstance(int shapeIndex, const float* position, const float* quaternion, const float* color, const float* scaling) override final;
-	virtual int registerGraphicsInstance(int shapeIndex, const double* position, const double* quaternion, const double* color, const double* scaling) override final;
+	virtual int registerGraphicsInstance(int shapeId, const float* position, const float* quaternion, const float* color, const float* scaling) override final;
+	virtual int registerGraphicsInstance(int shapeId, const double* position, const double* quaternion, const double* color, const double* scaling) override final;
 	virtual void drawLines(const float* positions, const float color[4], int numPoints, int pointStrideInBytes, const unsigned int* indices, int numIndices, float pointDrawSize) override final;
 	
 	virtual void drawLine(const float from[4], const float to[4], const float color[4], float lineWidth) override final;
@@ -55,20 +65,20 @@ public:
 	
 	virtual void drawPoint(const double* position, const double color[4], double pointDrawSize) override final;
 	
-	virtual void drawTexturedTriangleMesh(float worldPosition[3], float worldOrientation[4], const float* vertices, int numvertices, const unsigned int* indices, int numIndices, float color[4], int textureIndex = -1, int vertexLayout = 0) override final;
+	virtual void drawTexturedTriangleMesh(float worldPosition[3], float worldOrientation[4], const float* vertices, int numvertices, const unsigned int* indices, int numIndices, float color[4], int textureId = -1, int vertexLayout = 0) override final;
 
-	virtual int registerShape(const float* vertices, int numvertices, const int* indices, int numIndices, int primitiveType = B3_GL_TRIANGLES, int textureIndex = -1) override final;
-	virtual void updateShape(int shapeIndex, const float* vertices) override final;
+	virtual int registerShape(const float* vertices, int numvertices, const int* indices, int numIndices, int primitiveType = B3_GL_TRIANGLES, int textureId = -1) override final;
+	virtual void updateShape(int shapeId, const float* vertices) override final;
 
 	virtual int registerTexture(const unsigned char* texels, int width, int height, bool flipPixelsY = true) override final;
-	virtual void updateTexture(int textureIndex, const unsigned char* texels, bool flipPixelsY = true) override final;
-	virtual void activateTexture(int textureIndex) override final;
-	virtual void replaceTexture(int shapeIndex, int textureIndex) override final;
-	virtual void removeTexture(int textureIndex) override final;
+	virtual void updateTexture(int textureId, const unsigned char* texels, bool flipPixelsY = true) override final;
+	virtual void activateTexture(int textureId) override final;
+	virtual void replaceTexture(int shapeId, int textureId) override final;
+	virtual void removeTexture(int textureId) override final;
 
 	virtual void setPlaneReflectionShapeIndex(int index) override final;
 	
-	virtual int getShapeIndexFromInstance(int srcIndex) override final;
+	virtual int getShapeIndexFromInstance(int instanceId) override final;
 
 	virtual bool readSingleInstanceTransformToCPU(float* position, float* orientation, int srcIndex) override final;
 	virtual void writeSingleInstanceTransformToCPU(const float* position, const float* orientation, int srcIndex) override final;
