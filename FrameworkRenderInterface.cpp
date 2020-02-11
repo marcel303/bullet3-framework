@@ -33,6 +33,17 @@ static int m_nextGraphicsShapeId = 1;
 std::map<int, FrameworkGraphicsInstance*> m_graphicsInstances;
 static int m_nextGraphicsInstanceId = 1;
 
+static FrameworkGraphicsInstance * resolveGraphicsInstance(int id)
+{
+	auto i = m_graphicsInstances.find(id);
+	Assert(i != m_graphicsInstances.end());
+	
+	if (i != m_graphicsInstances.end())
+		return i->second;
+	else
+		return nullptr;
+}
+
 //
 
 void FrameworkRenderInterface::calculateViewMatrix(Mat4x4 & viewMatrix) const
@@ -108,13 +119,32 @@ void FrameworkRenderInterface::setLightPosition(const double lightPos[3])
 	Assert(false);
 }
 
-void FrameworkRenderInterface::setShadowMapResolution(int shadowMapResolution) { }
-void FrameworkRenderInterface::setShadowMapWorldSize(float worldSize) { }
+void FrameworkRenderInterface::setShadowMapResolution(int shadowMapResolution)
+{
+	Assert(false);
+}
 
-void FrameworkRenderInterface::setProjectiveTextureMatrices(const float viewMatrix[16], const float projectionMatrix[16]) { }
-void FrameworkRenderInterface::setProjectiveTexture(bool useProjectiveTexture) { }
+void FrameworkRenderInterface::setShadowMapWorldSize(float worldSize)
+{
+	Assert(false);
+}
+
+void FrameworkRenderInterface::setProjectiveTextureMatrices(const float viewMatrix[16], const float projectionMatrix[16])
+{
+	Assert(false);
+}
+
+void FrameworkRenderInterface::setProjectiveTexture(bool useProjectiveTexture)
+{
+	Assert(false);
+}
 
 void FrameworkRenderInterface::renderScene()
+{
+	renderSceneInternal();
+}
+
+void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 {
 	Mat4x4 viewMatrix;
 	calculateViewMatrix(viewMatrix);
@@ -156,8 +186,6 @@ void FrameworkRenderInterface::renderScene()
 		}
 	}
 }
-
-void FrameworkRenderInterface::renderSceneInternal(int renderMode) { }
 
 int FrameworkRenderInterface::getScreenWidth()
 {
@@ -338,7 +366,8 @@ void FrameworkRenderInterface::setPlaneReflectionShapeIndex(int index)
 
 int FrameworkRenderInterface::getShapeIndexFromInstance(int instanceId)
 {
-	return -1;
+	auto * instance = resolveGraphicsInstance(instanceId);
+	return instance ? instance->shapeId : -1;
 }
 
 bool FrameworkRenderInterface::readSingleInstanceTransformToCPU(float* position, float* orientation, int srcIndex)
@@ -349,7 +378,15 @@ bool FrameworkRenderInterface::readSingleInstanceTransformToCPU(float* position,
 
 void FrameworkRenderInterface::writeSingleInstanceTransformToCPU(const float* position, const float* orientation, int srcIndex)
 {
-	Assert(false);
+	auto * instance = resolveGraphicsInstance(srcIndex);
+	
+	if (instance != nullptr)
+	{
+	// todo : keep scaling
+		instance->transform = Mat4x4(true)
+			.Translate(position[0], position[1], position[2])
+			.Rotate(Quat(orientation[0], orientation[1], orientation[2], orientation[3]));
+	}
 }
 
 void FrameworkRenderInterface::writeSingleInstanceTransformToCPU(const double* position, const double* orientation, int srcIndex)
@@ -359,7 +396,12 @@ void FrameworkRenderInterface::writeSingleInstanceTransformToCPU(const double* p
 
 void FrameworkRenderInterface::writeSingleInstanceColorToCPU(const float* color, int srcIndex)
 {
-	Assert(false);
+	auto * instance = resolveGraphicsInstance(srcIndex);
+	
+	if (instance != nullptr)
+	{
+		instance->color.set(color[0], color[1], color[2], color[3]);
+	}
 }
 
 void FrameworkRenderInterface::writeSingleInstanceColorToCPU(const double* color, int srcIndex)
@@ -389,8 +431,7 @@ void FrameworkRenderInterface::writeSingleInstanceSpecularColorToCPU(const float
 
 int FrameworkRenderInterface::getTotalNumInstances() const
 {
-	Assert(false);
-	return 0;
+	return m_graphicsInstances.size();
 }
 
 void FrameworkRenderInterface::writeTransforms()

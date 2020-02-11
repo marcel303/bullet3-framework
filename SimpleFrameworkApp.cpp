@@ -279,7 +279,34 @@ SimpleFrameworkApp::SimpleFrameworkApp(
 
 void SimpleFrameworkApp::drawText3D(const char* txt, float position[3], float orientation[4], float color[4], float size, int optionFlag)
 {
-	Assert(false); // todo
+	float w;
+	const Vec2 p = transformToScreen(Vec3(position[0], position[1], position[2]), w);
+	
+	if (w > 0.f)
+	{
+		gxMatrixMode(GX_PROJECTION);
+		gxPushMatrix();
+		gxMatrixMode(GX_MODELVIEW);
+		gxPushMatrix();
+		{
+			projectScreen2d();
+			pushDepthTest(false, DEPTH_LESS);
+			pushBlend(BLEND_ALPHA);
+			
+			setFont("calibri.ttf");
+			gxColor4fv(color);
+			::drawText(p[0], p[1], size * 12.f, 0, 0, "%s", txt);
+			
+			popDepthTest();
+			popBlend();
+			
+			setTransform(TRANSFORM_3D);
+		}
+		gxMatrixMode(GX_PROJECTION);
+		gxPopMatrix();
+		gxMatrixMode(GX_MODELVIEW);
+		gxPopMatrix();
+	}
 }
 
 void SimpleFrameworkApp::drawText3D(const char* txt, float worldPosX, float worldPosY, float worldPosZ, float size1)

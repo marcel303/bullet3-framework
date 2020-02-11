@@ -92,12 +92,12 @@ void FrameworkGUIHelperInterface::removeGraphicsInstance(int graphicsId)
 
 void FrameworkGUIHelperInterface::changeRGBAColor(int instanceId, const double rgbaColor[4])
 {
-	Assert(false);
+	m_renderInterface->writeSingleInstanceColorToCPU(rgbaColor, instanceId);
 }
 
 void FrameworkGUIHelperInterface::changeSpecularColor(int instanceId, const double specularColor[3])
 {
-	Assert(false);
+	m_renderInterface->writeSingleInstanceSpecularColorToCPU(specularColor, instanceId);
 }
 
 void FrameworkGUIHelperInterface::changeTexture(int textureId, const unsigned char * texels, int width, int height)
@@ -217,16 +217,17 @@ void FrameworkGUIHelperInterface::setProjectiveTexture(bool useProjectiveTexture
 
 void FrameworkGUIHelperInterface::autogenerateGraphicsObjects(btDiscreteDynamicsWorld* rbWorld)
 {
+	Assert(false);
 }
 
 void FrameworkGUIHelperInterface::drawText3D(const char* txt, float posX, float posY, float posZ, float size)
 {
-	Assert(false);
+	m_appInterface->drawText3D(txt, posX, posY, posZ, size);
 }
 
 void FrameworkGUIHelperInterface::drawText3D(const char* txt, float position[3], float orientation[4], float color[4], float size, int optionFlag)
 {
-	Assert(false);
+	m_appInterface->drawText3D(txt, position, orientation, color, size, optionFlag);
 }
 
 int FrameworkGUIHelperInterface::addUserDebugText3D(const char* txt, const double positionXYZ[3], const double orientation[4], const double textColorRGB[3], double size, double lifeTime, int trackingVisualShapeIndex, int optionFlags, int replaceItemUid)
