@@ -90,7 +90,8 @@ public:
 	virtual void writeSingleInstanceScaleToCPU(const double* scale, int srcIndex) override final;
 	virtual void writeSingleInstanceSpecularColorToCPU(const double* specular, int srcIndex) override final;
 	virtual void writeSingleInstanceSpecularColorToCPU(const float* specular, int srcIndex) override final;
-
+	virtual void writeSingleInstanceFlagsToCPU(int flags, int srcIndex) override final;
+	
 	virtual int getTotalNumInstances() const override final;
 	
 	virtual void writeTransforms() override final;
