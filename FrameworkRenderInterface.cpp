@@ -460,6 +460,11 @@ void FrameworkRenderInterface::writeSingleInstanceSpecularColorToCPU(const float
 	Assert(false);
 }
 
+void FrameworkRenderInterface::writeSingleInstanceFlagsToCPU(int flags, int srcIndex)
+{
+	Assert(false);
+}
+
 int FrameworkRenderInterface::getTotalNumInstances() const
 {
 	return m_graphicsInstances.size();
