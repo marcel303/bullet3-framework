@@ -12,6 +12,7 @@
 
 #include "framework.h"
 #include "FrameworkCanvasInterface.h"
+#include "FrameworkDebugDrawer.h"
 #include "FrameworkGuiHelper.h"
 #include "FrameworkRenderInterface.h"
 #include "SimpleFrameworkApp.h"
@@ -417,6 +418,7 @@ void FrameworkExampleBrowser::update(float deltaTime)
 		{
 			B3_PROFILE("physicsDebugDraw");
 			sCurrentDemo->physicsDebugDraw(gDebugDrawFlags);
+			s_guiHelper->m_debugDraw->flushLines();
 		}
 	}
 
