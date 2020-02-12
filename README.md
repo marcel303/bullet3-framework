@@ -1,12 +1,20 @@
 #  Readme
 
+This repository contains the [Framework](https://github.com/marcel303/framework) integration for the [Bullet3](https://github.com/bulletphysics/bullet3) library. Bullet is a real-time physicsical simulation and collision detection library. It's used in robotics, games, and other creative ventures.
+
+This repository contains,
+
+- `chibi` files to make available the `bullet3` libraries,
+- Framework implementations for Bullet's `app`, `render`, `debug draw` and `GUI helper` interfaces,
+- Bullet's example browser, ported over to Framework.
+
 ## Getting up and running
 
 In summary,
 
 - Clone this repository.
 - Clone a stable `bullet3` release,
-- Clone the 'framework' repository. 'framework' is a library for creative coding, and includes the graphics API we depend on and the project file generator we will use.
+- Clone the `framework` repository. `framework` is a library for creative coding, and includes the graphics API we depend on and the project file generator we will use.
 - Create a 'chibi root' file, and let it point to both the 'framework' repository and this repository.
 - Generate the project file.
 
