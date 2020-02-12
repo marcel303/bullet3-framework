@@ -85,11 +85,25 @@ void FrameworkRenderInterface::updateCamera(int upAxis)
 
 void FrameworkRenderInterface::removeAllInstances()
 {
-// todo : is this supposed to clear graphics shapes as well ?
-
+	// remove instances
+	
 	while (!m_graphicsInstances.empty())
 	{
 		removeGraphicsInstance(m_graphicsInstances.begin()->first);
+	}
+	
+	// remove shapes
+	
+	{
+		for (auto & i : m_graphicsShapes)
+		{
+			auto *& shape = i.second;
+			
+			delete shape;
+			shape = nullptr;
+		}
+		
+		m_graphicsShapes.clear();
 	}
 }
 
