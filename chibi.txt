@@ -77,12 +77,20 @@ app bullet3-standaloneMain-framework
 	compile_definition B3_USE_STANDALONE_EXAMPLE *
 
 library bullet3-exampleBrowser-thirdPartyLibs
+	scan_files cpp path ../bullet3/examples/ThirdPartyLibs/BussIK
+	
+	scan_files c   path ../bullet3/examples/ThirdPartyLibs/lua-5.2.3/lua_standalone
+	header_path ../bullet3/examples/ThirdPartyLibs/lua-5.2.3/src expose
+	
 	scan_files cpp path ../bullet3/examples/ThirdPartyLibs/stb_image
 	scan_files cpp path ../bullet3/examples/ThirdPartyLibs/Gwen traverse
+	
 	add_files ../bullet3/examples/ThirdPartyLibs/Wavefront/tiny_obj_loader.cpp
 	add_files ../bullet3/examples/ThirdPartyLibs/Wavefront/tiny_obj_loader.h
+	
 	add_files ../bullet3/examples/ThirdPartyLibs/tinyxml2/tinyxml2.cpp
 	add_files ../bullet3/examples/ThirdPartyLibs/tinyxml2/tinyxml2.h
+	
 	header_path ../bullet3/examples/ThirdPartyLibs expose
 
 library bullet3-exampleBrowser-exampleEntries
@@ -96,12 +104,14 @@ library bullet3-exampleBrowser-exampleEntries
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.cpp
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.h
 
+	push_group examples
+
 	scan_files cpp path ../bullet3/examples/BasicDemo
 	scan_files cpp path ../bullet3/examples/Benchmarks
-	scan_files cpp path ../bullet3/examples/Blocksolver
 	scan_files cpp path ../bullet3/examples/BulletRobotics
 	scan_files cpp path ../bullet3/examples/Collision traverse
 	scan_files cpp path ../bullet3/examples/Constraints
+	scan_files cpp path ../bullet3/examples/DeformableDemo
 	scan_files cpp path ../bullet3/examples/DynamicControlDemo
 	scan_files cpp path ../bullet3/examples/Evolution traverse
 	scan_files cpp path ../bullet3/examples/Experiments
@@ -110,24 +120,27 @@ library bullet3-exampleBrowser-exampleEntries
 	scan_files cpp path ../bullet3/examples/FractureDemo
 	scan_files cpp path ../bullet3/examples/GyroscopicDemo
 	scan_files cpp path ../bullet3/examples/Heightfield
-	scan_files cpp path ../bullet3/examples/HelloWorld
+	scan_files cpp path ../bullet3/examples/HelloWorld exclude_path ../bullet3/examples/HelloWorld/HelloWorld.cpp
 	scan_files cpp path ../bullet3/examples/Importers traverse
 	scan_files cpp path ../bullet3/examples/InverseDynamics
 	scan_files cpp path ../bullet3/examples/InverseKinematics
-	#scan_files cpp path ../bullet3/examples/LuaDemo
+	scan_files cpp path ../bullet3/examples/LuaDemo
 	scan_files cpp path ../bullet3/examples/MultiBody
 	scan_files cpp path ../bullet3/examples/MultiThreadedDemo
+	scan_files cpp path ../bullet3/examples/MultiThreading
 	scan_files cpp path ../bullet3/examples/Planar2D
 	scan_files cpp path ../bullet3/examples/Raycast
 	scan_files cpp path ../bullet3/examples/RenderingExamples traverse
 	scan_files cpp path ../bullet3/examples/RigidBody
 	scan_files cpp path ../bullet3/examples/RoboticsLearning
-	#scan_files cpp path ../bullet3/examples/RobotSimulator
+	scan_files cpp path ../bullet3/examples/RobotSimulator exclude_path ../bullet3/examples/RobotSimulator/VRGloveSimulatorMain.cpp exclude_path ../bullet3/examples/RobotSimulator/RobotSimulatorMain.cpp exclude_path ../bullet3/examples/RobotSimulator/HelloBulletRobotics.cpp
 	scan_files cpp path ../bullet3/examples/RollingFrictionDemo
 	scan_files cpp path ../bullet3/examples/SoftDemo
 	scan_files cpp path ../bullet3/examples/Tutorial
 	scan_files cpp path ../bullet3/examples/Vehicles
 	scan_files cpp path ../bullet3/examples/VoronoiFracture
+
+	pop_group
 
 	scan_files h   path ../bullet3/examples traverse
 
