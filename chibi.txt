@@ -101,6 +101,8 @@ library bullet3-exampleBrowser-exampleEntries
 	depend_library bullet3-extras-inverseDynamics
 	depend_library bullet3-softBody
 
+	compile_definition INCLUDE_CLOTH_DEMOS *
+	
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.cpp
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.h
 
@@ -136,6 +138,7 @@ library bullet3-exampleBrowser-exampleEntries
 	scan_files cpp path ../bullet3/examples/RobotSimulator exclude_path ../bullet3/examples/RobotSimulator/VRGloveSimulatorMain.cpp exclude_path ../bullet3/examples/RobotSimulator/RobotSimulatorMain.cpp exclude_path ../bullet3/examples/RobotSimulator/HelloBulletRobotics.cpp
 	scan_files cpp path ../bullet3/examples/RollingFrictionDemo
 	scan_files cpp path ../bullet3/examples/SoftDemo
+	scan_files cpp path ../bullet3/examples/TinyRenderer exclude_path ../bullet3/examples/TinyRenderer/main.cpp
 	scan_files cpp path ../bullet3/examples/Tutorial
 	scan_files cpp path ../bullet3/examples/Vehicles
 	scan_files cpp path ../bullet3/examples/VoronoiFracture
