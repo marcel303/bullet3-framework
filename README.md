@@ -14,10 +14,10 @@ This repository contains,
 
 In summary,
 
-- Clone this repository.
+- Clone this repository,
 - Clone a stable `bullet3` release,
-- Clone the `framework` repository. `framework` is a library for creative coding, and includes the graphics API we depend on and the project file generator we will use.
-- Create a 'chibi root' file, and let it point to both the 'framework' repository and this repository.
+- Clone the `framework` repository. `framework` is a library for creative coding, and includes the graphics API we depend on and the project file generator we will use,
+- Create a 'chibi root' file, and let it point to both the 'framework' repository and this repository,
 - Generate the project file.
 
 Step by step:
@@ -25,11 +25,11 @@ Step by step:
 ```
 cd ~
 git clone https://github.com/marcel303/framework
-git clone https://github.com/bulletphysics/bullet3.git --branch 2.89
 git clone https://github.com/marcel303/bullet3-framework
+git clone https://github.com/bulletphysics/bullet3.git --branch 2.89
 ```
 
-Create a text file `chibi-root.txt` with the following contents,
+Create a text file named `chibi-root.txt` with the following contents,
 
 ```
 cd ~
@@ -41,11 +41,11 @@ add_root framework
 add bullet3-framework
 ```
 
-This will create a chibi root file adding the chibi files in both the `framework` and `bullet3-framework` repositories.
+This will create a chibi root file referencing the chibi files in both the `framework` and `bullet3-framework` repositories.
 
 Generate the project file,
 
-On linux/macos,
+On linux/macOS,
 
 ```
 cd ~
@@ -60,14 +60,14 @@ cd framework
 generate.bat bullet3*
 ```
 
-Note that the wildcard `*` means we will generate all of the libraries and apps with a name starting with `bullet3`.
+Note that the wildcard `*` means we will generate all of the libraries and apps with a name starting with `bullet3`. This includes the bullet3 library, as well as some extension libraries and the Example Browser app ported over to Framework.
 
-The project file generator should open Finder on macos, with `Project.xcodeproj` focused, or Explorer on Windows, with `Project.sln` focused.
+The project file generator should open Finder on macOS, with `Project.xcodeproj` focused, or Explorer on Windows, with `Project.sln` focused.
 
-Open the generated project file in your favourite ide. To run Bullet's example browser, select the 'bullet3-ExampleBrowser-Framework' target and build and run it.
+Open the generated project file in your favourite ide. To run Bullet's example browser, select the 'bullet3-exampleBrowser-framework' target and build and run it.
 
 ## Using bullet3-framework within your own projects
-To use bullet3-framework within your own apps, you will need to,
+To use `bullet3-framework` within your own apps, you will need to,
 
 - Create a folder and a `chibi.txt` file for your app(s),
 - Add your chibi file to the chibi root,
@@ -81,7 +81,6 @@ Create a folder and a `chibi.txt` file,
 ```
 cd ~
 mkdir myapp
-cd myapp
 ```
 
 Create a `chibi.txt` file within the `myapp` folder with the following contents,
@@ -150,8 +149,6 @@ Note that the target to generate the project file for has changed to `myapp`. Th
 For instance,
 
 ```
-cd ~
-cd framework
 ./generate.sh myapp bullet3*
 ```
 
@@ -163,7 +160,7 @@ If you want to make an app that just uses bullet3 (rather than the framework int
 depend_library bullet3
 ```
 
-Inside your chibi file. Note you won't have access to any of the framework integrations, including the SimpleFrameworkApp used above.
+Inside your chibi file. Note you won't have access to any of the framework integrations, including the SimpleFrameworkApp used above or the Framework debug draw implementation.
 
 ## Debug draw using bullet3-framework
 
