@@ -14,6 +14,7 @@
 #include "FrameworkCanvasInterface.h"
 #include "FrameworkDebugDrawer.h"
 #include "FrameworkGuiHelper.h"
+#include "FrameworkParameterInterface.h"
 #include "FrameworkRenderInterface.h"
 #include "SimpleFrameworkApp.h"
 
@@ -496,6 +497,84 @@ static void doImGui(FrameworkImGuiContext & guiContext)
 				else
 				{
 					ImGui::Text("%s", name);
+				}
+			}
+		}
+		ImGui::End();
+		
+		if (ImGui::Begin("Parameters", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			auto * paramInterface = static_cast<FrameworkParameterInterface*>(s_app->m_parameterInterface);
+			
+			for (auto & param : paramInterface->m_params)
+			{
+				switch (param.type)
+				{
+				case FrameworkParameterInterface::kParamType_Undefined:
+					break;
+					
+				case FrameworkParameterInterface::kParamType_Button:
+					if (param.button.m_isTrigger)
+					{
+						if (ImGui::Button(param.button.m_name))
+						{
+							if (param.button.m_callback != nullptr)
+								param.button.m_callback(param.button.m_buttonId, 1, param.button.m_userPointer);
+						}
+					}
+					else
+					{
+						bool value = param.value != 0.f;
+						
+						if (ImGui::Checkbox(param.button.m_name, &value))
+						{
+							param.value = value ? 1.f : 0.f;
+							if (param.button.m_callback != nullptr)
+								param.button.m_callback(param.button.m_buttonId, param.button.m_initialState, param.button.m_userPointer);
+						}
+					}
+					break;
+				case FrameworkParameterInterface::kParamType_Slider:
+					{
+						if (param.slider.m_clampToIntegers)
+						{
+							int value = *param.slider.m_paramValuePointer;
+							if (ImGui::SliderInt(param.slider.m_name, &value, param.slider.m_minVal, param.slider.m_maxVal))
+							{
+								param.value = value;
+								if (param.slider.m_callback != nullptr)
+									param.slider.m_callback(value, param.slider.m_userPointer);
+							}
+						}
+						else
+						{
+							float value = *param.slider.m_paramValuePointer;
+							if (ImGui::SliderFloat(param.slider.m_name, &value, param.slider.m_minVal, param.slider.m_maxVal))
+							{
+								param.value = value;
+								if (param.slider.m_callback != nullptr)
+									param.slider.m_callback(value, param.slider.m_userPointer);
+							}
+						}
+					}
+					break;
+				case FrameworkParameterInterface::kParamType_ComboBox:
+					{
+						ImGui::PushID(&param);
+						int item = (int)param.value;
+						if (ImGui::Combo("Combo", &item, param.comboBox.m_items, param.comboBox.m_numItems))
+						{
+							if (param.comboBox.m_callback != nullptr)
+							{
+								param.comboBox.m_callback(
+									param.comboBox.m_comboboxId,
+									param.comboBox.m_items[(int)param.value],
+									param.comboBox.m_userPointer);
+							}
+						}
+						ImGui::PopID();
+					}
+					break;
 				}
 			}
 		}
