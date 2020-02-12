@@ -64,6 +64,7 @@ library bullet3-framework
 	add_files SimpleFrameworkApp.h
 	add_files SimpleCamera.cpp
 	add_files SimpleCamera.h
+	add_files README.md
 	header_path . expose
 	resource_path data
 
