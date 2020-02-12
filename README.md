@@ -2,6 +2,8 @@
 
 This repository contains the [Framework](https://github.com/marcel303/framework) integration for the [Bullet3](https://github.com/bulletphysics/bullet3) library. Bullet is a real-time physicsical simulation and collision detection library. It's used in robotics, games, and other creative ventures.
 
+![](docs/exampleBrowser1.png)
+
 This repository contains,
 
 - `chibi` files to make available the `bullet3` libraries,
@@ -193,6 +195,8 @@ void draw()
 ```
 
 Please refer to the Bullet3 documentation for more information about debug draw and its api.
+
+![](docs/exampleBrowser2.png)
 
 ## Scene render using bullet3-framework
 
