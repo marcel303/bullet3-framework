@@ -6,48 +6,48 @@ library bullet3 shared
 	scan_files h   path ../bullet3/src/Bullet3Common
 	header_path ../bullet3/src expose
 
-library bullet3-inversedynamics shared
+library bullet3-inverseDynamics shared
 	depend_library bullet3
 	scan_files cpp path ../bullet3/src/BulletInverseDynamics traverse
 	scan_files hpp path ../bullet3/src/BulletInverseDynamics traverse
 
-library bullet3-softbody shared
+library bullet3-softBody shared
 	depend_library bullet3
 	scan_files cpp path ../bullet3/src/BulletSoftBody traverse
 	scan_files h   path ../bullet3/src/BulletSoftBody traverse
 
-library bullet3-extras-serialize-BulletFileLoader shared
+library bullet3-extras-serialize-bulletFileLoader shared
 	depend_library bullet3
 	scan_files cpp path ../bullet3/Extras/Serialize/BulletFileLoader
 	scan_files h   path ../bullet3/Extras/Serialize/BulletFileLoader
 
-library bullet3-extras-serialize-BulletWorldImporter shared
+library bullet3-extras-serialize-bulletWorldImporter shared
 	depend_library bullet3
-	depend_library bullet3-extras-serialize-BulletFileLoader
+	depend_library bullet3-extras-serialize-bulletFileLoader
 	scan_files cpp path ../bullet3/Extras/Serialize/BulletWorldImporter
 	scan_files h   path ../bullet3/Extras/Serialize/BulletWorldImporter
 
-library bullet3-extras-InverseDynamics shared
+library bullet3-extras-inverseDynamics shared
 	depend_library bullet3
-	depend_library bullet3-inversedynamics
+	depend_library bullet3-inverseDynamics
 	scan_files cpp path ../bullet3/Extras/InverseDynamics
 	scan_files hpp path ../bullet3/Extras/InverseDynamics
 
-app bullet3-Examples-BasicDemo
+app bullet3-examples-basicDemo
 	depend_library bullet3
 	add_files ../bullet3/examples/BasicDemo/BasicExample.cpp
 	add_files ../bullet3/examples/BasicDemo/BasicExample.h
 	add_files ../bullet3/examples/BasicDemo/main.cpp
 
-library bullet3-Examples-Utils
+library bullet3-examples-utils
 	depend_library bullet3
 	scan_files cpp path ../bullet3/examples/Utils
 	scan_files h   path ../bullet3/examples/Utils
 	header_path ../bullet3/examples expose
 
-library bullet3-FrameworkIntegration
+library bullet3-framework
 	depend_library bullet3
-	depend_library bullet3-Examples-Utils
+	depend_library bullet3-examples-utils
 	depend_library framework
 	add_files FrameworkCanvasInterface.cpp
 	add_files FrameworkCanvasInterface.h
@@ -64,17 +64,18 @@ library bullet3-FrameworkIntegration
 	add_files SimpleFrameworkApp.h
 	add_files SimpleCamera.cpp
 	add_files SimpleCamera.h
+	header_path . expose
 	resource_path data
 
-app bullet3-StandaloneMain-Framework
+app bullet3-standaloneMain-framework
 	depend_library bullet3
-	depend_library bullet3-FrameworkIntegration
+	depend_library bullet3-framework
 	add_files ../bullet3/examples/BasicDemo/BasicExample.cpp
 	add_files ../bullet3/examples/BasicDemo/BasicExample.h
 	add_files StandaloneMain.cpp
 	compile_definition B3_USE_STANDALONE_EXAMPLE *
 
-library bullet3-ExampleBrowser-ThirdPartyLibs
+library bullet3-exampleBrowser-thirdPartyLibs
 	scan_files cpp path ../bullet3/examples/ThirdPartyLibs/stb_image
 	scan_files cpp path ../bullet3/examples/ThirdPartyLibs/Gwen traverse
 	add_files ../bullet3/examples/ThirdPartyLibs/Wavefront/tiny_obj_loader.cpp
@@ -83,14 +84,13 @@ library bullet3-ExampleBrowser-ThirdPartyLibs
 	add_files ../bullet3/examples/ThirdPartyLibs/tinyxml2/tinyxml2.h
 	header_path ../bullet3/examples/ThirdPartyLibs expose
 
-library bullet3-ExampleBrowser-ExampleEntries
+library bullet3-exampleBrowser-exampleEntries
 
 	depend_library bullet3
-	depend_library bullet3-softbody
-	depend_library bullet3-extras-InverseDynamics
-
-	depend_library bullet3-Examples-Utils
-	depend_library bullet3-ExampleBrowser-ThirdPartyLibs
+	depend_library bullet3-examples-utils
+	depend_library bullet3-exampleBrowser-thirdPartyLibs
+	depend_library bullet3-extras-inverseDynamics
+	depend_library bullet3-softBody
 
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.cpp
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.h
@@ -133,14 +133,12 @@ library bullet3-ExampleBrowser-ExampleEntries
 	# for GwenGuiSupport
 	header_path ../bullet3/examples/ExampleBrowser
 
-app bullet3-ExampleBrowser-Framework
+app bullet3-exampleBrowser-framework
 
 	depend_library bullet3
-	depend_library bullet3-extras-serialize-BulletWorldImporter
-
-	depend_library bullet3-ExampleBrowser-ExampleEntries
-
-	depend_library bullet3-FrameworkIntegration
+	depend_library bullet3-exampleBrowser-exampleEntries
+	depend_library bullet3-extras-serialize-bulletWorldImporter
+	depend_library bullet3-framework
 
 	depend_library imgui-framework
 	
