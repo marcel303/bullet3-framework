@@ -34,14 +34,13 @@ static float gFixedTimeStep = 0.f;
 static class ExampleEntries * gAllExamples = nullptr;
 
 static bool inputIsCaptured = false;
-static bool visualWireframe = true;
 static bool renderVisualGeometry = true;
 static bool renderGrid = true;
 static bool gEnableRenderLoop = true;
 
 //int gDebugDrawFlags = 0; // todo : enable keyboard shortcuts for changing debug draw mode
 static int gDebugDrawFlags =
-	1*btIDebugDraw::DBG_DrawWireframe |
+	0*btIDebugDraw::DBG_DrawWireframe |
 	0*btIDebugDraw::DBG_DrawAabb |
 	1*btIDebugDraw::DBG_DrawContactPoints |
 	0*btIDebugDraw::DBG_DrawFeaturesText |
@@ -172,7 +171,6 @@ void MyKeyboardCallback(int key, int state)
 		}
 		if (key == 'w' && state)
 		{
-			visualWireframe = !visualWireframe;
 			gDebugDrawFlags ^= btIDebugDraw::DBG_DrawWireframe;
 		}
 
@@ -404,21 +402,22 @@ void FrameworkExampleBrowser::update(float deltaTime)
 			s_app->drawGrid(dg);
 		}
 		
-		if (renderVisualGeometry && ((gDebugDrawFlags & btIDebugDraw::DBG_DrawWireframe) == 0))
+		if (renderVisualGeometry)
 		{
-			BT_PROFILE("Render Scene");
+			const bool wireframe = (gDebugDrawFlags & btIDebugDraw::DBG_DrawWireframe) != 0;
 			
-			pushWireframe(visualWireframe);
+			if (wireframe)
 			{
-				sCurrentDemo->renderScene();
+				B3_PROFILE("physicsDebugDraw");
+				sCurrentDemo->physicsDebugDraw(gDebugDrawFlags);
+				s_guiHelper->m_debugDraw->flushLines();
 			}
-			popWireframe();
-		}
-		else
-		{
-			B3_PROFILE("physicsDebugDraw");
-			sCurrentDemo->physicsDebugDraw(gDebugDrawFlags);
-			s_guiHelper->m_debugDraw->flushLines();
+			else
+			{
+				BT_PROFILE("Render Scene");
+				sCurrentDemo->renderScene();
+				s_guiHelper->m_debugDraw->flushLines();
+			}
 		}
 	}
 
