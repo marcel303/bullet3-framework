@@ -178,6 +178,15 @@ void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 	
 	const Vec3 lightPosition_view = viewMatrix.Mul4(light.position);
 	
+	Shader shader("shaders/bullet3-shape");
+	setShader(shader);
+	shader.setImmediate("u_lightPosition_view",
+		lightPosition_view[0],
+		lightPosition_view[1],
+		lightPosition_view[2]);
+	const GxImmediateIndex u_tex = shader.getImmediateIndex("u_tex");
+	const GxImmediateIndex u_hasTex = shader.getImmediateIndex("u_hasTex");
+	const GxImmediateIndex u_color = shader.getImmediateIndex("u_color");
 	for (auto & i : m_graphicsInstances)
 	{
 		auto * instance = i.second;
@@ -193,28 +202,22 @@ void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 			
 			gxPushMatrix();
 			gxMultMatrixf(transform.m_v);
-			Shader shader("shaders/bullet3-shape");
-			setShader(shader);
 			{
 				const bool hasTex = shape->textureId != 0 && shape->textureId != (GxTextureId)-1;
 				
-				shader.setTexture("u_tex", 0, hasTex ? shape->textureId : 0, true, true);
-				shader.setImmediate("u_hasTex", hasTex ? 1.f : 0.f);
-				shader.setImmediate("u_color",
+				shader.setTexture(u_tex, 0, hasTex ? shape->textureId : 0, true, true);
+				shader.setImmediate(u_hasTex, hasTex ? 1.f : 0.f);
+				shader.setImmediate(u_color,
 					instance->color.r,
 					instance->color.g,
 					instance->color.b,
 					instance->color.a);
-					shader.setImmediate("u_lightPosition_view",
-						lightPosition_view[0],
-						lightPosition_view[1],
-						lightPosition_view[2]);
 				shape->mesh.draw();
 			}
-			clearShader();
 			gxPopMatrix();
 		}
 	}
+	clearShader();
 }
 
 int FrameworkRenderInterface::getScreenWidth()
