@@ -109,6 +109,22 @@ void FrameworkRenderInterface::removeAllInstances()
 		
 		m_graphicsShapes.clear();
 	}
+	
+	// remove textures - nowhere else they seem to be removed!
+	
+	{
+		for (auto & i : m_textures)
+		{
+			auto *& texture = i.second;
+			
+			texture->free();
+			
+			delete texture;
+			texture = nullptr;
+		}
+		
+		m_textures.clear();
+	}
 }
 
 void FrameworkRenderInterface::removeGraphicsInstance(int id)
