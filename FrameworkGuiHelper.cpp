@@ -684,7 +684,6 @@ void FrameworkGUIHelperInterface::changeSpecularColor(int instanceId, const doub
 
 void FrameworkGUIHelperInterface::changeTexture(int textureId, const unsigned char * texels, int width, int height)
 {
-	// todo : what about width and height ?
 	m_renderInterface->updateTexture(textureId, texels);
 }
 

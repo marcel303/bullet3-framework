@@ -12,8 +12,6 @@
 #include "FrameworkRenderInterface.h"
 #include "FrameworkWindow.h"
 
-#define TODO 0
-
 struct SimpleInternalData
 {
 	int m_upAxis;  //y=1 or z=2 is supported

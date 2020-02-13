@@ -13,7 +13,6 @@ struct FrameworkGUIHelperInterface : GUIHelperInterface
 {
 	FrameworkDebugDrawer * m_debugDraw = nullptr;
 	
-// todo : just makes these globals. dear oh dear what a mess Bullit!
 	CommonGraphicsApp * m_appInterface = nullptr;
 	CommonRenderInterface * m_renderInterface = nullptr;
 	CommonParameterInterface * m_parameterInterface = nullptr;
