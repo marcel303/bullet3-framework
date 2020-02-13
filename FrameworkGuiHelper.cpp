@@ -495,23 +495,16 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 						const int index1 = hull->getIndexPointer()[t * 3 + 1];
 						const int index2 = hull->getIndexPointer()[t * 3 + 2];
 						
-						btTransform parentTransform;
-						if (shapeTransform != nullptr)
-							parentTransform = *shapeTransform;
-						else
-							parentTransform.setIdentity();
+						const btVector3 & pos0 = hull->getVertexPointer()[index0];
+						const btVector3 & pos1 = hull->getVertexPointer()[index1];
+						const btVector3 & pos2 = hull->getVertexPointer()[index2];
 						
-						const btVector3 pos0 = parentTransform * hull->getVertexPointer()[index0];
-						const btVector3 pos1 = parentTransform * hull->getVertexPointer()[index1];
-						const btVector3 pos2 = parentTransform * hull->getVertexPointer()[index2];
-						
-						btVector3 triNormal = (pos1 - pos0).cross(pos2 - pos0);
-						triNormal.safeNormalize();
+						const btVector3 triNormal = (pos1 - pos0).cross(pos2 - pos0).safeNormalize();
 
 						for (int v = 0; v < 3; v++)
 						{
 							const int index = hull->getIndexPointer()[t * 3 + v];
-							const btVector3 pos = parentTransform * hull->getVertexPointer()[index];
+							const btVector3 & pos = hull->getVertexPointer()[index];
 							
 							FrameworkVertex vertex;
 							vertex.xyzw[0] = pos[0];
@@ -529,6 +522,7 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 						}
 					}
 				}
+				
 				delete hull;
 			}
 	
