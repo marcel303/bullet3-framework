@@ -16,7 +16,7 @@ struct FrameworkGraphicsShape
 	GxIndexBuffer ib;
 	GxMesh mesh;
 	
-	GxTextureId textureId = 0;
+	int textureId = 0;
 };
 
 struct FrameworkGraphicsInstance
@@ -28,6 +28,7 @@ struct FrameworkGraphicsInstance
 	Vec3 scaling = Vec3(1, 1, 1);
 	
 	Color color = colorWhite;
+	Color specularColor = colorWhite;
 	
 	void calculateTransform(Mat4x4 & transform) const
 	{
@@ -40,11 +41,14 @@ struct FrameworkGraphicsInstance
 };
 
 // todo : move to internal data
-std::map<int, FrameworkGraphicsShape*> m_graphicsShapes;
+static std::map<int, FrameworkGraphicsShape*> m_graphicsShapes;
 static int m_nextGraphicsShapeId = 1;
 
-std::map<int, FrameworkGraphicsInstance*> m_graphicsInstances;
+static std::map<int, FrameworkGraphicsInstance*> m_graphicsInstances;
 static int m_nextGraphicsInstanceId = 1;
+
+static std::map<int, GxTexture*> m_textures;
+static int m_nextTextureId = 1;
 
 static FrameworkGraphicsInstance * resolveGraphicsInstance(int id)
 {
@@ -143,7 +147,8 @@ void FrameworkRenderInterface::setLightPosition(const float lightPos[3])
 
 void FrameworkRenderInterface::setLightPosition(const double lightPos[3])
 {
-	Assert(false);
+	const float lightPosf[3] = { (float)lightPos[0], (float)lightPos[1], (float)lightPos[2] };
+	setLightPosition(lightPosf);
 }
 
 void FrameworkRenderInterface::setShadowMapResolution(int shadowMapResolution)
@@ -187,6 +192,7 @@ void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 	const GxImmediateIndex u_tex = shader.getImmediateIndex("u_tex");
 	const GxImmediateIndex u_hasTex = shader.getImmediateIndex("u_hasTex");
 	const GxImmediateIndex u_color = shader.getImmediateIndex("u_color");
+	const GxImmediateIndex u_specularColor = shader.getImmediateIndex("u_specularColor");
 	for (auto & i : m_graphicsInstances)
 	{
 		auto * instance = i.second;
@@ -203,15 +209,20 @@ void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 			gxPushMatrix();
 			gxMultMatrixf(transform.m_v);
 			{
-				const bool hasTex = shape->textureId != 0 && shape->textureId != (GxTextureId)-1;
+				const bool hasTex = shape->textureId > 0;
+				const GxTextureId textureId = hasTex ? m_textures[shape->textureId]->id : 0;
 				
-				shader.setTexture(u_tex, 0, hasTex ? shape->textureId : 0, true, true);
+				shader.setTexture(u_tex, 0, hasTex ? textureId : 0, true, true);
 				shader.setImmediate(u_hasTex, hasTex ? 1.f : 0.f);
 				shader.setImmediate(u_color,
 					instance->color.r,
 					instance->color.g,
 					instance->color.b,
 					instance->color.a);
+				shader.setImmediate(u_specularColor,
+					instance->specularColor.r,
+					instance->specularColor.g,
+					instance->specularColor.b);
 				shape->mesh.draw();
 			}
 			gxPopMatrix();
@@ -238,6 +249,8 @@ void FrameworkRenderInterface::resize(int width, int height)
 
 int FrameworkRenderInterface::registerGraphicsInstance(int shapeId, const float* position, const float* quaternion, const float* color, const float* scaling)
 {
+	Assert(shapeId > 0);
+	
 	const int id = m_nextGraphicsInstanceId++;
 	
 	auto *& instance = m_graphicsInstances[id];
@@ -253,8 +266,11 @@ int FrameworkRenderInterface::registerGraphicsInstance(int shapeId, const float*
 
 int FrameworkRenderInterface::registerGraphicsInstance(int shapeId, const double* position, const double* quaternion, const double* color, const double* scaling)
 {
- 	Assert(false);
- 	return 0;
+	const float positionf[3] = { (float)position[0], (float)position[1], (float)position[2] };
+	const float quaternionf[4] = { (float)quaternion[0], (float)quaternion[1], (float)quaternion[2], (float)quaternion[3] };
+	const float colorf[4] = { (float)color[0], (float)color[1], (float)color[2], (float)color[3] };
+	const float scalingf[3] = { (float)scaling[0], (float)scaling[1], (float)scaling[2] };
+	return registerGraphicsInstance(shapeId, positionf, quaternionf, colorf, scalingf);
 }
 
 void FrameworkRenderInterface::drawLines(const float* positions, const float color[4], int numPoints, int pointStrideInBytes, const unsigned int* indices, int numIndices, float pointDrawSize)
@@ -301,12 +317,19 @@ void FrameworkRenderInterface::drawLine(const double from[4], const double to[4]
 
 void FrameworkRenderInterface::drawPoint(const float* position, const float color[4], float pointDrawSize)
 {
-	Assert(false);
+	// todo : point sizes
+	gxBegin(GX_POINTS);
+	gxColor4f(color[0], color[1], color[2], 1.f); // fixme : seems like btVector3 is used as color, but btVector4 ..
+	gxVertex3f(position[0], position[1], position[2]);
+	gxEnd();
 }
 
 void FrameworkRenderInterface::drawPoint(const double* position, const double color[4], double pointDrawSize)
 {
-	Assert(false);
+	const float positionf[3] = { (float)position[0], (float)position[1], (float)position[2] };
+	const float colorf[4] = { (float)color[0], (float)color[1], (float)color[2], (float)color[3] };
+	const float pointDrawSizef = pointDrawSize;
+	drawPoint(positionf, colorf, pointDrawSizef);
 }
 
 void FrameworkRenderInterface::drawTexturedTriangleMesh(float worldPosition[3], float worldOrientation[4], const float* vertices, int numvertices, const unsigned int* indices, int numIndices, float color[4], int textureId, int vertexLayout)
@@ -363,19 +386,62 @@ void FrameworkRenderInterface::updateShape(int shapeId, const float* vertices)
 	}
 }
 
+static uint8_t * convertTextureToRGBA(const uint8_t * src, int sx, int sy)
+{
+	uint8_t * dst = new uint8_t[sx * sy * 4];
+	
+	uint8_t * dst_ptr = dst;
+	
+	for (int i = sx * sy; i > 0; --i)
+	{
+		dst_ptr[0] = src[0];
+		dst_ptr[1] = src[1];
+		dst_ptr[2] = src[2];
+		dst_ptr[3] = 0xff;
+		
+		dst_ptr += 4;
+		src += 3;
+	}
+	
+	return dst;
+}
+
 int FrameworkRenderInterface::registerTexture(const unsigned char* texels, int width, int height, bool flipPixelsY)
 {
-	return createTextureFromRGB8(texels, width, height, true, true);
+	const int id = m_nextTextureId++;
+	
+	auto *& texture = m_textures[id];
+	texture = new GxTexture();
+	texture->allocate(width, height, GX_RGBA8_UNORM, true, true);
+	
+	auto * rgba = convertTextureToRGBA(texels, width, height);
+	texture->upload(rgba, 4, 0);
+	delete [] rgba;
+	
+	return id;
 }
 
 void FrameworkRenderInterface::updateTexture(int textureId, const unsigned char* texels, bool flipPixelsY)
 {
-	Assert(false);
+	Assert(textureId != 0 && textureId != -1);
+	if (textureId != 0 && textureId != -1)
+	{
+		auto * texture = m_textures[textureId];
+		
+		auto * rgba = convertTextureToRGBA(texels, texture->sx, texture->sy);
+		texture->upload(rgba, 4, 0);
+		delete [] rgba;
+	}
 }
 
 void FrameworkRenderInterface::activateTexture(int textureId)
 {
-	gxSetTexture(textureId);
+	Assert(textureId != 0 && textureId != -1);
+	if (textureId != 0 && textureId != -1)
+	{
+		auto * texture = m_textures[textureId];
+		gxSetTexture(texture->id);
+	}
 }
 
 void FrameworkRenderInterface::replaceTexture(int shapeId, int textureId)
@@ -390,11 +456,14 @@ void FrameworkRenderInterface::replaceTexture(int shapeId, int textureId)
 	}
 }
 
-void FrameworkRenderInterface::removeTexture(int id)
+void FrameworkRenderInterface::removeTexture(int textureId)
 {
-	GxTextureId textureId = id;
+	auto *& texture = m_textures[textureId];
 	
-	freeTexture(textureId);
+	texture->free();
+	
+	delete texture;
+	texture = nullptr;
 }
 
 void FrameworkRenderInterface::setPlaneReflectionShapeIndex(int index)
@@ -427,7 +496,9 @@ void FrameworkRenderInterface::writeSingleInstanceTransformToCPU(const float* po
 
 void FrameworkRenderInterface::writeSingleInstanceTransformToCPU(const double* position, const double* orientation, int srcIndex)
 {
-	Assert(false);
+	const float positionf[3] = { (float)position[0], (float)position[1], (float)position[2] };
+	const float orientationf[4] = { (float)orientation[0], (float)orientation[1], (float)orientation[2], (float)orientation[3] };
+	writeSingleInstanceTransformToCPU(positionf, orientationf, srcIndex);
 }
 
 void FrameworkRenderInterface::writeSingleInstanceColorToCPU(const float* color, int srcIndex)
@@ -442,7 +513,8 @@ void FrameworkRenderInterface::writeSingleInstanceColorToCPU(const float* color,
 
 void FrameworkRenderInterface::writeSingleInstanceColorToCPU(const double* color, int srcIndex)
 {
-	Assert(false);
+	const float colorf[4] = { (float)color[0], (float)color[1], (float)color[2], (float)color[3] };
+	writeSingleInstanceColorToCPU(colorf, srcIndex);
 }
 
 void FrameworkRenderInterface::writeSingleInstanceScaleToCPU(const float* scale, int srcIndex)
@@ -457,17 +529,24 @@ void FrameworkRenderInterface::writeSingleInstanceScaleToCPU(const float* scale,
 
 void FrameworkRenderInterface::writeSingleInstanceScaleToCPU(const double* scale, int srcIndex)
 {
-	Assert(false);
+	const float scalef[3] = { (float)scale[0], (float)scale[1], (float)scale[2] };
+	writeSingleInstanceScaleToCPU(scalef, srcIndex);
 }
 
 void FrameworkRenderInterface::writeSingleInstanceSpecularColorToCPU(const double* specular, int srcIndex)
 {
-	Assert(false);
+	const float specularf[3] = { (float)specular[0], (float)specular[1], (float)specular[2] };
+	writeSingleInstanceSpecularColorToCPU(specularf, srcIndex);
 }
 
 void FrameworkRenderInterface::writeSingleInstanceSpecularColorToCPU(const float* specular, int srcIndex)
 {
-	Assert(false);
+	auto * instance = resolveGraphicsInstance(srcIndex);
+	
+	if (instance != nullptr)
+	{
+		instance->specularColor.set(specular[0], specular[1], specular[2], 1.f);
+	}
 }
 
 void FrameworkRenderInterface::writeSingleInstanceFlagsToCPU(int flags, int srcIndex)

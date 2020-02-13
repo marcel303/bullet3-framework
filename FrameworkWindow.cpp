@@ -9,6 +9,7 @@ FrameworkWindow::~FrameworkWindow()
 void FrameworkWindow::createDefaultWindow(int width, int height, const char * title)
 {
 	framework.windowTitle = title;
+	framework.windowIsResizable = true;
 	framework.enableDepthBuffer = true;
 	framework.msaaLevel = 4;
 	framework.enableRealTimeEditing = true;
