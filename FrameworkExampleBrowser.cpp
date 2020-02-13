@@ -100,6 +100,7 @@ static void deleteDemo()
 	if (sCurrentDemo != nullptr)
 	{
 		sCurrentDemo->exitPhysics();
+		
 		s_app->m_renderer->removeAllInstances();
 		
 		delete sCurrentDemo;
@@ -663,13 +664,19 @@ int main(int argc, char * argv[])
 			app->m_renderer->updateCamera(app->getUpAxis());
 
 			exampleBrowser->update(framework.timeStep);
-
+			
 			//
 			
 			pushBlend(BLEND_ALPHA);
 			pushDepthTest(false, DEPTH_LESS);
-			projectScreen2d();
-			guiContext.draw();
+			{
+				projectScreen2d();
+				
+				auto * canvasInterface = static_cast<FrameworkCanvasInterface*>(app->m_2dCanvasInterface);
+				canvasInterface->drawCanvas(0, 0);
+			
+				guiContext.draw();
+			}
 			popDepthTest();
 			popBlend();
 			
