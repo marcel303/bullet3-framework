@@ -6,6 +6,7 @@
 
 #include "btBulletDynamicsCommon.h"
 #include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
+#include "BulletSoftBody/btSoftBodyHelpers.h"
 
 #include "framework.h"
 
@@ -30,15 +31,12 @@ void FrameworkGUIHelperInterface::createCollisionObjectGraphicsObject(btCollisio
 	
 	if (graphicsShapeId >= 0)
 	{
-		// the graphics shape is already scaled
-		const btVector3 localScaling(1, 1, 1);
-		
 		const int graphicsInstanceId = m_renderInterface->registerGraphicsInstance(
 			graphicsShapeId,
 			startTransform.getOrigin(),
 			startTransform.getRotation(),
 			color,
-			localScaling);
+			btVector3(1., 1., 1.));
 		
 		body->setUserIndex(graphicsInstanceId);
 	}
@@ -126,6 +124,8 @@ public:
 		m_indices[baseIndex + 1] = baseVertex + 1;
 		m_indices[baseIndex + 2] = baseVertex + 2;
 		
+		const btVector3 extents = m_aabbMax - m_aabbMin;
+		
 		for (int k = 0; k < 3; k++)
 		{
 			const btVector3 normal = (tris[0] - tris[1]).cross(tris[0] - tris[2]).safeNormalize();
@@ -138,13 +138,43 @@ public:
 				v.normal[l] = normal[l];
 			}
 			
-			const btVector3 extents = m_aabbMax - m_aabbMin;
-			
-			v.uv[0] = (1. - ((v.xyzw[0] - m_aabbMin[0]) / (m_aabbMax[0] - m_aabbMin[0])))*m_textureScaling;
-			v.uv[1] = (1. - (v.xyzw[1] - m_aabbMin[1]) / (m_aabbMax[1] - m_aabbMin[1]))*m_textureScaling;
+			v.uv[0] = (1. - (v.xyzw[0] - m_aabbMin[0]) / extents[0]) * m_textureScaling;
+			v.uv[1] = (1. - (v.xyzw[1] - m_aabbMin[1]) / extents[1]) * m_textureScaling;
 		}
 	}
 };
+
+static void computeSoftBodyVertices(
+	const btCollisionShape * collisionShape,
+	btAlignedObjectArray<FrameworkVertex> & out_vertices,
+	btAlignedObjectArray<int> & out_indices)
+{
+	b3Assert(collisionShape->getUserPointer());
+	if (collisionShape->getUserPointer() == nullptr)
+		return;
+	
+	const btSoftBody * psb = (btSoftBody*)collisionShape->getUserPointer();
+	out_vertices.resize(psb->m_faces.size() * 3);
+
+	for (int i = 0; i < psb->m_faces.size(); ++i) // Foreach face
+	{
+		for (int k = 0; k < 3; ++k) // Foreach vertex on a face
+		{
+			const int currentIndex = i * 3 + k;
+			
+			for (int j = 0; j < 3; j++)
+				out_vertices[currentIndex].xyzw[j] = psb->m_faces[i].m_n[k]->m_x[j];
+			out_vertices[currentIndex].xyzw[3] = 1.;
+			
+			for (int j = 0; j < 3; ++j)
+				out_vertices[currentIndex].normal[j] = psb->m_faces[i].m_n[k]->m_n[j];
+			for (int j = 0; j < 2; ++j)
+				out_vertices[currentIndex].uv[j] = 0.5;  // we don't have UV info...
+			
+			out_indices.push_back(currentIndex);
+		}
+	}
+}
 
 void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollisionShape* collisionShape)
 {
@@ -366,7 +396,7 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 		
 		heightField->processAllTriangles(&triangleCollector, aabbMin, aabbMax);
 		
-		// todo : texture for shapes
+		// todo : textures for shapes
 		//int userImage = heightField->getUserIndex2();
 		//if (userImage == -1)
 		//	userImage = m_data->m_checkedTexture;
@@ -380,6 +410,14 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 			btVector3(1., 1., 1.),
 			out_vertices,
 			out_indices);
+	}
+	else if (collisionShape->getShapeType() == SOFTBODY_SHAPE_PROXYTYPE)
+	{
+		btAlignedObjectArray<FrameworkVertex> vertices;
+		btAlignedObjectArray<int> indices;
+		computeSoftBodyVertices(collisionShape, vertices, indices);
+		if (vertices.size() > 0)
+			appendPrim(vertices[0].xyzw, vertices.size(), &indices[0], indices.size(), nullptr, btVector3(1., 1., 1.), out_vertices, out_indices);
 	}
 	else
 	{
@@ -422,16 +460,15 @@ void FrameworkGUIHelperInterface::syncPhysicsToGraphics(const btDiscreteDynamics
 			const btCollisionObject * colObj = rbWorld->getCollisionObjectArray()[i];
 			const btCollisionShape * collisionShape = colObj->getCollisionShape();
 			
-			/*
 			if (collisionShape->getShapeType() == SOFTBODY_SHAPE_PROXYTYPE && collisionShape->getUserIndex() >= 0)
 			{
-				btAlignedObjectArray<GLInstanceVertex> gfxVertices;
+				btAlignedObjectArray<FrameworkVertex> vertices;
 				btAlignedObjectArray<int> indices;
-				computeSoftBodyVertices(collisionShape, gfxVertices, indices);
-				m_renderInterface->updateShape(collisionShape->getUserIndex(), &gfxVertices[0].xyzw[0]);
+				computeSoftBodyVertices(collisionShape, vertices, indices);
+				if (vertices.size() > 0)
+					m_renderInterface->updateShape(collisionShape->getUserIndex(), vertices[0].xyzw);
 				continue;
 			}
-			*/
 			
 			const btVector3 & position = colObj->getWorldTransform().getOrigin();
 			const btQuaternion rotation = colObj->getWorldTransform().getRotation();
@@ -667,15 +704,9 @@ void FrameworkGUIHelperInterface::autogenerateGraphicsObjects(btDiscreteDynamics
 	{
 		btCollisionObject * colObj = sortedObjects[i];
 		
-	#if false // todo : why ?
-		//btRigidBody* body = btRigidBody::upcast(colObj);
-		//does this also work for btMultiBody/btMultiBodyLinkCollider?
-		btSoftBody* sb = btSoftBody::upcast(colObj);
-		if (sb)
-		{
+		btSoftBody * sb = btSoftBody::upcast(colObj);
+		if (sb != nullptr)
 			colObj->getCollisionShape()->setUserPointer(sb);
-		}
-	#endif
 	
 		createCollisionShapeGraphicsObject(colObj->getCollisionShape());
 		int colorIndex = colObj->getBroadphaseHandle()->getUid() & 3;
