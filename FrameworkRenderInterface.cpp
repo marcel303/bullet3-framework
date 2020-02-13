@@ -103,6 +103,9 @@ void FrameworkRenderInterface::removeAllInstances()
 		{
 			auto *& shape = i.second;
 			
+			shape->vb.free();
+			shape->ib.free();
+			
 			delete shape;
 			shape = nullptr;
 		}
@@ -398,7 +401,10 @@ void FrameworkRenderInterface::updateShape(int shapeId, const float* vertices)
 	{
 		auto * shape = i->second;
 		
-		shape->vb.alloc(vertices, shape->vb.getNumBytes());
+		const int numBytes = shape->vb.getNumBytes();
+		
+		shape->vb.free();
+		shape->vb.alloc(vertices, numBytes);
 	}
 }
 
