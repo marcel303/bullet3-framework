@@ -5,6 +5,7 @@ include engine/ShaderUtil.txt
 uniform sampler2D u_tex;
 uniform float u_hasTex;
 uniform vec4 u_color;
+uniform vec3 u_specularColor;
 
 // lighting
 uniform vec3 u_lightPosition_view;
@@ -49,8 +50,8 @@ void main()
 
 		if (true)
 		{
-			light *= 0.5;
-			light += 0.5 * abs(srgbToLinear(surfaceToLightVector));
+			light *= 0.8;
+			light += 0.2 * abs(srgbToLinear(surfaceToLightVector));
 		}
 
 		//light = vec3(diffuseFactor);
@@ -58,6 +59,8 @@ void main()
 		//light = delta;
 		//light *= length(delta) / 100.0;
 	}
+
+	light += vec3(0.1);
 
 	vec3 color = linearToSrgb(baseColor * light);
 
