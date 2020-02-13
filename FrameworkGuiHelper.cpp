@@ -54,26 +54,26 @@ struct FrameworkVertex
 };
 
 static void appendPrim(
-	const float * vertices,
+	const FrameworkVertex * __restrict vertices,
 	const int numVertices,
-	const int * indices,
+	const int * __restrict indices,
 	const int numIndices,
 	const btTransform * transform,
 	const btVector3 & halfExtents,
-	btAlignedObjectArray<float> & out_vertices,
+	btAlignedObjectArray<FrameworkVertex> & out_vertices,
 	btAlignedObjectArray<int> & out_indices)
 {
-	const int baseVertex = out_vertices.size() / 9;
+	const int baseVertex = out_vertices.size();
 	
-	out_vertices.resize(out_vertices.size() + numVertices * 9);
-	for (int i = 0; i < numVertices * 9; ++i)
-		out_vertices[baseVertex*9 + i] = vertices[i];
+	out_vertices.resize(out_vertices.size() + numVertices);
+	for (int i = 0; i < numVertices; ++i)
+		out_vertices[baseVertex + i] = vertices[i];
 
 	for (int i = 0; i < numVertices; ++i)
 	{
-		float & x = out_vertices[(baseVertex + i) * 9 + 0];
-		float & y = out_vertices[(baseVertex + i) * 9 + 1];
-		float & z = out_vertices[(baseVertex + i) * 9 + 2];
+		float & x = out_vertices[baseVertex + i].xyzw[0];
+		float & y = out_vertices[baseVertex + i].xyzw[1];
+		float & z = out_vertices[baseVertex + i].xyzw[2];
 		
 		x *= halfExtents.x();
 		y *= halfExtents.y();
@@ -186,8 +186,9 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 		return;
 	
 	const int vertexStrideInBytes = 9 * sizeof(float);
+	btAssert(sizeof(FrameworkVertex) == vertexStrideInBytes);
 
-	btAlignedObjectArray<float> out_vertices;
+	btAlignedObjectArray<FrameworkVertex> out_vertices;
 	btAlignedObjectArray<int> out_indices;
 	
 	std::function<void(btCollisionShape * collisionShape, const btTransform * shapeTransform)> appendShape;
@@ -200,7 +201,7 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 			const btVector3 halfExtents = boxShape->getHalfExtentsWithMargin();
 			
 			appendPrim(
-				cube_vertices_textured,
+				(FrameworkVertex*)cube_vertices_textured,
 				sizeof(cube_vertices_textured) / vertexStrideInBytes,
 				cube_indices,
 				sizeof(cube_indices) / sizeof(cube_indices[0]),
@@ -215,7 +216,7 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 			const btScalar sphereSize = 2. * sphereShape->getRadius();
 
 			appendPrim(
-				textured_detailed_sphere_vertices,
+				(FrameworkVertex*)textured_detailed_sphere_vertices,
 				sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes,
 				textured_detailed_sphere_indices,
 				sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]),
@@ -239,21 +240,21 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 			const int numIndices = sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]);
 			const int * indices = textured_detailed_sphere_indices;
 			
-			btAlignedObjectArray<float> transformedVertices;
-			transformedVertices.resize(numVertices * 9);
-			for (size_t i = 0; i < transformedVertices.size(); ++i)
-				transformedVertices[i] = textured_detailed_sphere_vertices[i];
+			btAlignedObjectArray<FrameworkVertex> transformedVertices;
+			transformedVertices.resize(numVertices);
+			for (size_t i = 0; i < numVertices; ++i)
+				transformedVertices[i] = ((FrameworkVertex*)textured_detailed_sphere_vertices)[i];
 			
 			for (int i = 0; i < numVertices; ++i)
 			{
-				transformedVertices[i * 9 + 0] *= radiusScale.x();
-				transformedVertices[i * 9 + 1] *= radiusScale.y();
-				transformedVertices[i * 9 + 2] *= radiusScale.z();
+				transformedVertices[i].xyzw[0] *= radiusScale.x();
+				transformedVertices[i].xyzw[1] *= radiusScale.y();
+				transformedVertices[i].xyzw[2] *= radiusScale.z();
 				
-				if (transformedVertices[i * 9 + up] > 0)
-					transformedVertices[i * 9 + up] += halfHeight;
+				if (transformedVertices[i].xyzw[up] > 0)
+					transformedVertices[i].xyzw[up] += halfHeight;
 				else
-					transformedVertices[i * 9 + up] -= halfHeight;
+					transformedVertices[i].xyzw[up] -= halfHeight;
 			}
 			
 			appendPrim(&transformedVertices[0], numVertices, indices, numIndices, shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
@@ -276,7 +277,7 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 					transform = (*shapeTransform) * transform;
 				
 				appendPrim(
-					textured_detailed_sphere_vertices,
+					(FrameworkVertex*)textured_detailed_sphere_vertices,
 					sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes,
 					textured_detailed_sphere_indices,
 					sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]),
@@ -340,7 +341,7 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 			vertices[3].uv[0] = +vecLen / 2;
 			vertices[3].uv[1] = -vecLen / 2;
 
-			appendPrim((float*)vertices, 4, indices, 6, shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
+			appendPrim(vertices, 4, indices, 6, shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
 		}
 		else if (collisionShape->getShapeType() == TERRAIN_SHAPE_PROXYTYPE)
 		{
@@ -360,15 +361,18 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 			//if (userImage == -1)
 			//	userImage = m_data->m_checkedTexture;
 			
-			appendPrim(
-				triangleCollector.m_vertices[0].xyzw,
-				triangleCollector.m_vertices.size(),
-				&triangleCollector.m_indices[0],
-				triangleCollector.m_indices.size(),
-				shapeTransform,
-				btVector3(1., 1., 1.),
-				out_vertices,
-				out_indices);
+			if (triangleCollector.m_vertices.size() > 0)
+			{
+				appendPrim(
+					&triangleCollector.m_vertices[0],
+					triangleCollector.m_vertices.size(),
+					&triangleCollector.m_indices[0],
+					triangleCollector.m_indices.size(),
+					shapeTransform,
+					btVector3(1., 1., 1.),
+					out_vertices,
+					out_indices);
+			}
 		}
 		else if (collisionShape->getShapeType() == SOFTBODY_SHAPE_PROXYTYPE)
 		{
@@ -376,7 +380,7 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 			btAlignedObjectArray<int> indices;
 			computeSoftBodyVertices(collisionShape, vertices, indices);
 			if (vertices.size() > 0)
-				appendPrim(vertices[0].xyzw, vertices.size(), &indices[0], indices.size(), shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
+				appendPrim(&vertices[0], vertices.size(), &indices[0], indices.size(), shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
 		}
 		else
 		{
@@ -396,8 +400,8 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 	if (out_indices.size() > 0)
 	{
 		const int graphicsShapeId = m_renderInterface->registerShape(
-			&out_vertices[0],
-			out_vertices.size() / 9,
+			out_vertices[0].xyzw,
+			out_vertices.size(),
 			&out_indices[0],
 			out_indices.size(),
 			B3_GL_TRIANGLES,
