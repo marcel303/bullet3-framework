@@ -416,6 +416,7 @@ int FrameworkRenderInterface::registerTexture(const unsigned char* texels, int w
 	
 	auto * rgba = convertTextureToRGBA(texels, width, height);
 	texture->upload(rgba, 4, 0);
+	texture->generateMipmaps();
 	delete [] rgba;
 	
 	return id;
@@ -430,6 +431,7 @@ void FrameworkRenderInterface::updateTexture(int textureId, const unsigned char*
 		
 		auto * rgba = convertTextureToRGBA(texels, texture->sx, texture->sy);
 		texture->upload(rgba, 4, 0);
+		texture->generateMipmaps();
 		delete [] rgba;
 	}
 }
