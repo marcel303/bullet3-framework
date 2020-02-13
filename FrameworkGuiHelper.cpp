@@ -6,6 +6,8 @@
 
 #include "btBulletDynamicsCommon.h"
 #include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
+#include "BulletCollision/CollisionShapes/btShapeHull.h" // to create a tesselation of a generic btConvexShape
+#include "BulletCollision/CollisionShapes/btConvexPolyhedron.h"
 #include "BulletSoftBody/btSoftBodyHelpers.h"
 
 #include "framework.h"
@@ -95,7 +97,7 @@ static void appendPrim(
 		out_indices[baseIndex + i] = baseVertex + indices[i];
 }
 
-class MyTriangleCollector2 : public btTriangleCallback
+class MyTriangleCollector2 : public btTriangleCallback, public btInternalTriangleIndexCallback
 {
 public:
 	btVector3 m_aabbMin, m_aabbMax;
@@ -143,6 +145,11 @@ public:
 			v.uv[0] = (1. - (v.xyzw[0] - m_aabbMin[0]) / extents[0]) * m_textureScaling;
 			v.uv[1] = (1. - (v.xyzw[1] - m_aabbMin[1]) / extents[1]) * m_textureScaling;
 		}
+	}
+	
+	virtual void internalProcessTriangleIndex(btVector3 * triangle, int partId, int triangleIndex) override final
+	{
+		processTriangle(triangle, partId, triangleIndex);
 	}
 };
 
@@ -381,6 +388,138 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 			computeSoftBodyVertices(collisionShape, vertices, indices);
 			if (vertices.size() > 0)
 				appendPrim(&vertices[0], vertices.size(), &indices[0], indices.size(), shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
+		}
+		else if (collisionShape->getShapeType() == CONVEX_TRIANGLEMESH_SHAPE_PROXYTYPE)
+		{
+			const btConvexTriangleMeshShape * convexMesh = static_cast<const btConvexTriangleMeshShape*>(collisionShape);
+
+			btVector3 aabbMin(-BT_LARGE_FLOAT, -BT_LARGE_FLOAT, -BT_LARGE_FLOAT);
+			btVector3 aabbMax(+BT_LARGE_FLOAT, +BT_LARGE_FLOAT, +BT_LARGE_FLOAT);
+			
+			MyTriangleCollector2 triangleCollector(aabbMin, aabbMax);
+			
+			convexMesh->getMeshInterface()->InternalProcessAllTriangles(&triangleCollector, aabbMin, aabbMax);
+			
+			if (triangleCollector.m_vertices.size() > 0)
+			{
+				appendPrim(
+					&triangleCollector.m_vertices[0],
+					triangleCollector.m_vertices.size(),
+					&triangleCollector.m_indices[0],
+					triangleCollector.m_indices.size(),
+					shapeTransform,
+					btVector3(1., 1., 1.),
+					out_vertices,
+					out_indices);
+			}
+		}
+		else if (collisionShape->isConvex())
+		{
+			const btConvexShape * convex = (btConvexShape*)collisionShape;
+			
+			const btConvexPolyhedron * pol = nullptr;
+			if (convex->isPolyhedral())
+			{
+				const btPolyhedralConvexShape * poly = (btPolyhedralConvexShape*)convex;
+				pol = poly->getConvexPolyhedron();
+			}
+
+			btAlignedObjectArray<FrameworkVertex> vertices;
+			btAlignedObjectArray<int> indices;
+			
+			if (pol != nullptr)
+			{
+				for (int v = 0; v < pol->m_vertices.size(); v++)
+				{
+					FrameworkVertex vertex;
+					vertex.xyzw[0] = pol->m_vertices[v][0];
+					vertex.xyzw[1] = pol->m_vertices[v][1];
+					vertex.xyzw[2] = pol->m_vertices[v][2];
+					vertex.xyzw[3] = 1.;
+					
+					btVector3 norm = pol->m_vertices[v];
+					norm.safeNormalize();
+					vertex.normal[0] = norm[0];
+					vertex.normal[1] = norm[1];
+					vertex.normal[2] = norm[2];
+					
+					vertex.uv[0] = .5;
+					vertex.uv[1] = .5;
+					
+					vertices.push_back(vertex);
+				}
+				
+				for (int f = 0; f < pol->m_faces.size(); f++)
+				{
+					for (int ii = 2; ii < pol->m_faces[f].m_indices.size(); ii++)
+					{
+						indices.push_back(pol->m_faces[f].m_indices[0]);
+						indices.push_back(pol->m_faces[f].m_indices[ii - 1]);
+						indices.push_back(pol->m_faces[f].m_indices[ii]);
+					}
+				}
+			}
+			else
+			{
+				btShapeHull * hull = new btShapeHull(convex);
+				hull->buildHull(0.0, 1);
+
+				{
+					for (int t = 0; t < hull->numTriangles(); ++t)
+					{
+						const int index0 = hull->getIndexPointer()[t * 3 + 0];
+						const int index1 = hull->getIndexPointer()[t * 3 + 1];
+						const int index2 = hull->getIndexPointer()[t * 3 + 2];
+						
+						btTransform parentTransform;
+						if (shapeTransform != nullptr)
+							parentTransform = *shapeTransform;
+						else
+							parentTransform.setIdentity();
+						
+						const btVector3 pos0 = parentTransform * hull->getVertexPointer()[index0];
+						const btVector3 pos1 = parentTransform * hull->getVertexPointer()[index1];
+						const btVector3 pos2 = parentTransform * hull->getVertexPointer()[index2];
+						
+						btVector3 triNormal = (pos1 - pos0).cross(pos2 - pos0);
+						triNormal.safeNormalize();
+
+						for (int v = 0; v < 3; v++)
+						{
+							const int index = hull->getIndexPointer()[t * 3 + v];
+							const btVector3 pos = parentTransform * hull->getVertexPointer()[index];
+							
+							FrameworkVertex vertex;
+							vertex.xyzw[0] = pos[0];
+							vertex.xyzw[1] = pos[1];
+							vertex.xyzw[2] = pos[2];
+							vertex.xyzw[3] = 1.;
+							vertex.normal[0] = triNormal[0];
+							vertex.normal[1] = triNormal[1];
+							vertex.normal[2] = triNormal[2];
+							vertex.uv[0] = .5;
+							vertex.uv[1] = .5;
+							
+							indices.push_back(vertices.size());
+							vertices.push_back(vertex);
+						}
+					}
+				}
+				delete hull;
+			}
+	
+			if (vertices.size() > 0)
+			{
+				appendPrim(
+					&vertices[0],
+					vertices.size(),
+					&indices[0],
+					indices.size(),
+					shapeTransform,
+					btVector3(1., 1., 1.),
+					out_vertices,
+					out_indices);
+			}
 		}
 		else
 		{
