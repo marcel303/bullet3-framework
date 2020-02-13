@@ -4,8 +4,9 @@
 
 #include "Bullet3Common/b3Vector3.h"
 #include "Bullet3Common/b3Logging.h"
-
 #include "Bullet3Common/b3Quaternion.h"
+#include "LinearMath/btAlignedObjectArray.h"
+
 #include "FrameworkCanvasInterface.h" // todo : rename to 2dCanvasInterface.h
 #include "FrameworkParameterInterface.h"
 #include "FrameworkRenderInterface.h"
@@ -198,14 +199,62 @@ void SimpleFrameworkApp::drawTexturedRect(float x0, float y0, float x1, float y1
 
 int SimpleFrameworkApp::registerCubeShape(float halfExtentsX, float halfExtentsY, float halfExtentsZ, int textureIndex, float textureScaling)
 {
-	Assert(false);
+	const int vertexStrideInBytes = 9 * sizeof(float);
 	
-	return 0;
+	const int numVertices = sizeof(cube_vertices_textured) / vertexStrideInBytes;
+	
+	btAlignedObjectArray<float> vertices;
+	vertices.resize(numVertices * 9);
+	for (int i = 0; i < numVertices * 9; ++i)
+		vertices[i] = cube_vertices_textured[i];
+	
+	for (int i = 0; i < numVertices; ++i)
+	{
+		vertices[i * 9 + 0] *= halfExtentsX;
+		vertices[i * 9 + 1] *= halfExtentsY;
+		vertices[i * 9 + 2] *= halfExtentsZ;
+	}
+	
+	return m_renderer->registerShape(
+		&vertices[0],
+		numVertices,
+		cube_indices,
+		sizeof(cube_indices) / sizeof(cube_indices[0]),
+		B3_GL_TRIANGLES,
+		textureIndex);
 }
 
 void SimpleFrameworkApp::registerGrid(int cells_x, int cells_z, float color0[4], float color1[4])
 {
-	Assert(false);
+	const double halfHeight = 0.1;
+	
+	b3Vector3 cubeExtents = b3MakeVector3(0.5, 0.5, 0.5);
+	cubeExtents[m_data->m_upAxis] = halfHeight;
+	
+	const int cubeId = registerCubeShape(cubeExtents[0], cubeExtents[1], cubeExtents[2]);
+	
+	const b3Quaternion orn(0, 0, 0, 1);
+	const b3Vector3 center = b3MakeVector3(0, 0, 0, 1);
+	const b3Vector3 scaling = b3MakeVector3(1, 1, 1, 1);
+
+	for (int i = 0; i < cells_x; i++)
+	{
+		for (int j = 0; j < cells_z; j++)
+		{
+			float * color = nullptr;
+			
+			if ((i + j) % 2 == 0)
+				color = (float*)color0;
+			else
+				color = (float*)color1;
+			
+			const b3Vector3 center = m_data->m_upAxis == 1
+				? b3MakeVector3((i + 0.5f) - cells_x * 0.5f, -halfHeight, (j + 0.5f) - cells_z * 0.5f)
+				: b3MakeVector3((i + 0.5f) - cells_x * 0.5f, (j + 0.5f) - cells_z * 0.5f, -halfHeight);
+			
+			m_renderer->registerGraphicsInstance(cubeId, center, orn, color, scaling);
+		}
+	}
 }
 
 int SimpleFrameworkApp::registerGraphicsUnitSphereShape(EnumSphereLevelOfDetail lod, int textureId)
