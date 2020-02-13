@@ -5,6 +5,7 @@
 #include "CommonInterfaces/CommonRenderInterface.h"
 
 #include "btBulletDynamicsCommon.h"
+#include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 
 #include "framework.h"
 
@@ -44,6 +45,13 @@ void FrameworkGUIHelperInterface::createCollisionObjectGraphicsObject(btCollisio
 }
 
 #include "OpenGLWindow/ShapeData.h"
+
+struct FrameworkVertex
+{
+	float xyzw[4];
+	float normal[3];
+	float uv[2];
+};
 
 static void appendPrim(
 	const float * vertices,
@@ -86,6 +94,57 @@ static void appendPrim(
 	for (int i = 0; i < numIndices; ++i)
 		out_indices[baseIndex + i] = baseVertex + indices[i];
 }
+
+class MyTriangleCollector2 : public btTriangleCallback
+{
+public:
+	btVector3 m_aabbMin, m_aabbMax;
+	btScalar m_textureScaling = 1.;
+	
+	btAlignedObjectArray<FrameworkVertex> m_vertices;
+	btAlignedObjectArray<int> m_indices;
+
+	MyTriangleCollector2(
+		const btVector3& aabbMin,
+		const btVector3& aabbMax)
+		: m_aabbMin(aabbMin)
+		, m_aabbMax(aabbMax)
+	{
+		m_vertices.reserve(1 << 16);
+		m_indices.reserve(1 << 16);
+	}
+
+	virtual void processTriangle(btVector3 * tris, int partId, int triangleIndex) override final
+	{
+		const int baseVertex = m_vertices.size();
+		const int baseIndex = m_indices.size();
+		
+		m_vertices.resize(m_vertices.size() + 3);
+		m_indices.resize(m_indices.size() + 3);
+		
+		m_indices[baseIndex + 0] = baseVertex + 0;
+		m_indices[baseIndex + 1] = baseVertex + 1;
+		m_indices[baseIndex + 2] = baseVertex + 2;
+		
+		for (int k = 0; k < 3; k++)
+		{
+			const btVector3 normal = (tris[0] - tris[1]).cross(tris[0] - tris[2]).safeNormalize();
+			
+			auto & v = m_vertices[baseVertex + k];
+			
+			for (int l = 0; l < 3; l++)
+			{
+				v.xyzw[l] = tris[k][l];
+				v.normal[l] = normal[l];
+			}
+			
+			const btVector3 extents = m_aabbMax - m_aabbMin;
+			
+			v.uv[0] = (1. - ((v.xyzw[0] - m_aabbMin[0]) / (m_aabbMax[0] - m_aabbMin[0])))*m_textureScaling;
+			v.uv[1] = (1. - (v.xyzw[1] - m_aabbMin[1]) / (m_aabbMax[1] - m_aabbMin[1]))*m_textureScaling;
+		}
+	}
+};
 
 void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollisionShape* collisionShape)
 {
@@ -234,7 +293,105 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 					out_vertices,
 					out_indices);
 			}
+			else
+			{
+				logDebug("unknown collision shape type: %d", collisionShape->getShapeType());
+			}
 		}
+	}
+	else if (collisionShape->getShapeType() == STATIC_PLANE_PROXYTYPE)
+	{
+		const btStaticPlaneShape * staticPlaneShape = static_cast<const btStaticPlaneShape*>(collisionShape);
+		const btScalar planeConst = staticPlaneShape->getPlaneConstant();
+		const btVector3 & planeNormal = staticPlaneShape->getPlaneNormal();
+		const btVector3 planeOrigin = planeNormal * planeConst;
+		
+		btVector3 vec0, vec1;
+		btPlaneSpace1(planeNormal, vec0, vec1);
+
+		const btScalar vecLen = 128;
+		const btVector3 verts[4] =
+		{
+			planeOrigin + vec0 * vecLen + vec1 * vecLen,
+			planeOrigin - vec0 * vecLen + vec1 * vecLen,
+			planeOrigin - vec0 * vecLen - vec1 * vecLen,
+			planeOrigin + vec0 * vecLen - vec1 * vecLen
+		};
+
+		const int indices[6] =
+		{
+			0, 1, 2, 0, 2, 3
+		};
+
+		FrameworkVertex vertices[4];
+
+		for (int i = 0; i < 4; i++)
+		{
+			const btVector3 & pos = verts[i];
+
+			vertices[i].xyzw[0] = pos[0];
+			vertices[i].xyzw[1] = pos[1];
+			vertices[i].xyzw[2] = pos[2];
+			vertices[i].xyzw[3] = 1.;
+			vertices[i].normal[0] = planeNormal[0];
+			vertices[i].normal[1] = planeNormal[1];
+			vertices[i].normal[2] = planeNormal[2];
+		}
+
+		vertices[0].uv[0] = +vecLen / 2;
+		vertices[0].uv[1] = +vecLen / 2;
+		vertices[1].uv[0] = -vecLen / 2;
+		vertices[1].uv[1] = +vecLen / 2;
+		vertices[2].uv[0] = -vecLen / 2;
+		vertices[2].uv[1] = -vecLen / 2;
+		vertices[3].uv[0] = +vecLen / 2;
+		vertices[3].uv[1] = -vecLen / 2;
+
+		appendPrim((float*)vertices, 4, indices, 6, nullptr, btVector3(1., 1., 1.), out_vertices, out_indices);
+	}
+	else if (collisionShape->getShapeType() == TERRAIN_SHAPE_PROXYTYPE)
+	{
+		const btHeightfieldTerrainShape * heightField = static_cast<const btHeightfieldTerrainShape*>(collisionShape);
+		
+		btVector3 aabbMin, aabbMax;
+		for (int k = 0; k < 3; k++)
+		{
+			aabbMin[k] = -BT_LARGE_FLOAT;
+			aabbMax[k] = +BT_LARGE_FLOAT;
+		}
+		
+		MyTriangleCollector2 triangleCollector(aabbMin, aabbMax);
+		if (heightField->getUserValue3())
+			triangleCollector.m_textureScaling = heightField->getUserValue3();
+		
+		heightField->processAllTriangles(&triangleCollector, aabbMin, aabbMax);
+		
+		// todo : texture for shapes
+		//int userImage = heightField->getUserIndex2();
+		//if (userImage == -1)
+		//	userImage = m_data->m_checkedTexture;
+		
+		appendPrim(
+			triangleCollector.m_vertices[0].xyzw,
+			triangleCollector.m_vertices.size(),
+			&triangleCollector.m_indices[0],
+			triangleCollector.m_indices.size(),
+			nullptr,
+			btVector3(1., 1., 1.),
+			out_vertices,
+			out_indices);
+	}
+	else
+	{
+		logDebug("unknown collision shape type: %d", collisionShape->getShapeType());
+		
+		/*
+		TRIANGLE_SHAPE_PROXYTYPE
+		TETRAHEDRAL_SHAPE_PROXYTYPE
+		CONE_SHAPE_PROXYTYPE
+		CYLINDER_SHAPE_PROXYTYPE
+		SOFTBODY_SHAPE_PROXYTYPE
+		*/
 	}
 	
 	if (out_indices.size() > 0)
@@ -310,6 +467,7 @@ void FrameworkGUIHelperInterface::render(const btDiscreteDynamicsWorld* rbWorld)
 void FrameworkGUIHelperInterface::createPhysicsDebugDrawer(btDiscreteDynamicsWorld* rbWorld)
 {
 	btAssert(rbWorld);
+	
 	if (m_debugDraw != nullptr)
 	{
 		delete m_debugDraw;
@@ -320,9 +478,8 @@ void FrameworkGUIHelperInterface::createPhysicsDebugDrawer(btDiscreteDynamicsWor
 	rbWorld->setDebugDrawer(m_debugDraw);
 
 	m_debugDraw->setDebugMode(
-		btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb
-		//btIDebugDraw::DBG_DrawContactPoints
-	);
+		btIDebugDraw::DBG_DrawWireframe |
+		btIDebugDraw::DBG_DrawAabb);
 }
 
 int FrameworkGUIHelperInterface::registerTexture(const unsigned char* texels, int width, int height)

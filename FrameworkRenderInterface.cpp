@@ -350,10 +350,17 @@ int FrameworkRenderInterface::registerShape(const float* vertices, int numvertic
 
 void FrameworkRenderInterface::updateShape(int shapeId, const float* vertices)
 {
-	Assert(false);
-	
 	if (shapeId <= 0)
 		return;
+	
+	auto i = m_graphicsShapes.find(shapeId);
+	Assert(i != m_graphicsShapes.end());
+	if (i != m_graphicsShapes.end())
+	{
+		auto * shape = i->second;
+		
+		shape->vb.alloc(vertices, shape->vb.getNumBytes());
+	}
 }
 
 int FrameworkRenderInterface::registerTexture(const unsigned char* texels, int width, int height, bool flipPixelsY)
