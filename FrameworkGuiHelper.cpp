@@ -10,6 +10,8 @@
 
 #include "framework.h"
 
+#include <functional>
+
 FrameworkGUIHelperInterface::~FrameworkGUIHelperInterface()
 {
 }
@@ -169,7 +171,7 @@ static void computeSoftBodyVertices(
 			for (int j = 0; j < 3; ++j)
 				out_vertices[currentIndex].normal[j] = psb->m_faces[i].m_n[k]->m_n[j];
 			for (int j = 0; j < 2; ++j)
-				out_vertices[currentIndex].uv[j] = 0.5;  // we don't have UV info...
+				out_vertices[currentIndex].uv[j] = 0.5; // we don't have UV info...
 			
 			out_indices.push_back(currentIndex);
 		}
@@ -188,249 +190,208 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 	btAlignedObjectArray<float> out_vertices;
 	btAlignedObjectArray<int> out_indices;
 	
-	if (collisionShape->getShapeType() == BOX_SHAPE_PROXYTYPE)
+	std::function<void(btCollisionShape * collisionShape, const btTransform * shapeTransform)> appendShape;
+	
+	appendShape = [&out_vertices, &out_indices, &appendShape](btCollisionShape * collisionShape, const btTransform * shapeTransform)
 	{
-		const btBoxShape * boxShape = (btBoxShape*)collisionShape;
-		const btVector3 halfExtents = boxShape->getHalfExtentsWithMargin();
-		
-		appendPrim(
-			cube_vertices_textured,
-			sizeof(cube_vertices_textured) / vertexStrideInBytes,
-			cube_indices,
-			sizeof(cube_indices) / sizeof(cube_indices[0]),
-			nullptr,
-			halfExtents,
-			out_vertices,
-			out_indices);
-	}
-	else if (collisionShape->getShapeType() == SPHERE_SHAPE_PROXYTYPE)
-	{
-		const btSphereShape * sphereShape = (btSphereShape*)collisionShape;
-		const btScalar sphereSize = 2. * sphereShape->getRadius();
-
-		appendPrim(
-			textured_detailed_sphere_vertices,
-			sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes,
-			textured_detailed_sphere_indices,
-			sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]),
-			nullptr,
-			btVector3(sphereSize, sphereSize, sphereSize),
-			out_vertices,
-			out_indices);
-	}
-	else if (collisionShape->getShapeType() == CAPSULE_SHAPE_PROXYTYPE)
-	{
-		const btCapsuleShape * capsuleShape = (btCapsuleShape*)collisionShape;
-		const int up = capsuleShape->getUpAxis();
-		const btScalar halfHeight = capsuleShape->getHalfHeight();
-
-		const btScalar radius = capsuleShape->getRadius();
-		const btScalar sphereSize = 2. * radius;
-
-		const btVector3 radiusScale = btVector3(sphereSize, sphereSize, sphereSize);
-
-		const int numVertices = sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes;
-		const int numIndices = sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]);
-		const int * indices = textured_detailed_sphere_indices;
-		
-		btAlignedObjectArray<float> transformedVertices;
-		transformedVertices.resize(numVertices * 9);
-		for (size_t i = 0; i < transformedVertices.size(); ++i)
-			transformedVertices[i] = textured_detailed_sphere_vertices[i];
-		
-		for (int i = 0; i < numVertices; ++i)
+		if (collisionShape->getShapeType() == BOX_SHAPE_PROXYTYPE)
 		{
-			transformedVertices[i * 9 + 0] *= radiusScale.x();
-			transformedVertices[i * 9 + 1] *= radiusScale.y();
-			transformedVertices[i * 9 + 2] *= radiusScale.z();
+			const btBoxShape * boxShape = (btBoxShape*)collisionShape;
+			const btVector3 halfExtents = boxShape->getHalfExtentsWithMargin();
 			
-			if (transformedVertices[i * 9 + up] > 0)
-				transformedVertices[i * 9 + up] += halfHeight;
-			else
-				transformedVertices[i * 9 + up] -= halfHeight;
+			appendPrim(
+				cube_vertices_textured,
+				sizeof(cube_vertices_textured) / vertexStrideInBytes,
+				cube_indices,
+				sizeof(cube_indices) / sizeof(cube_indices[0]),
+				shapeTransform,
+				halfExtents,
+				out_vertices,
+				out_indices);
 		}
-		
-		const int graphicsShapeId = m_renderInterface->registerShape(
-			&transformedVertices[0],
-			numVertices,
-			indices,
-			numIndices,
-			B3_GL_TRIANGLES,
-			0);
-
-		collisionShape->setUserIndex(graphicsShapeId);
-	}
-	else if (collisionShape->getShapeType() == MULTI_SPHERE_SHAPE_PROXYTYPE)
-	{
-		const btMultiSphereShape * multiSphereShape = (btMultiSphereShape*)collisionShape;
-		
-		for (int i = 0; i < multiSphereShape->getSphereCount(); ++i)
+		else if (collisionShape->getShapeType() == SPHERE_SHAPE_PROXYTYPE)
 		{
-			const btVector3 position = multiSphereShape->getSpherePosition(i);
-			const btScalar radius = multiSphereShape->getSphereRadius(i);
-			const btScalar sphereSize = 2. * radius;
+			const btSphereShape * sphereShape = (btSphereShape*)collisionShape;
+			const btScalar sphereSize = 2. * sphereShape->getRadius();
 
-			btTransform transform;
-			transform.setIdentity();
-			transform.setOrigin(position);
-			
 			appendPrim(
 				textured_detailed_sphere_vertices,
 				sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes,
 				textured_detailed_sphere_indices,
 				sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]),
-				&transform,
+				shapeTransform,
 				btVector3(sphereSize, sphereSize, sphereSize),
 				out_vertices,
 				out_indices);
 		}
-	}
-	else if (collisionShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
-	{
-		const btCompoundShape * compound = (btCompoundShape*)collisionShape;
-		
-		for (int i = 0; i < compound->getNumChildShapes(); ++i)
+		else if (collisionShape->getShapeType() == CAPSULE_SHAPE_PROXYTYPE)
 		{
-			const btCollisionShape * childShape = compound->getChildShape(i);
-			
-			if (childShape->getShapeType() == BOX_SHAPE_PROXYTYPE)
-			{
-				const btBoxShape * boxShape = (btBoxShape*)childShape;
-				const btVector3 halfExtents = boxShape->getHalfExtentsWithMargin();
-				
-				appendPrim(
-					cube_vertices_textured,
-					sizeof(cube_vertices_textured) / vertexStrideInBytes,
-					cube_indices,
-					sizeof(cube_indices) / sizeof(cube_indices[0]),
-					&compound->getChildTransform(i),
-					halfExtents,
-					out_vertices,
-					out_indices);
-			}
-			else if (childShape->getShapeType() == SPHERE_SHAPE_PROXYTYPE)
-			{
-				const btSphereShape * sphereShape = (btSphereShape*)childShape;
-				const btScalar sphereSize = 2.f * sphereShape->getRadius();
+			const btCapsuleShape * capsuleShape = (btCapsuleShape*)collisionShape;
+			const int up = capsuleShape->getUpAxis();
+			const btScalar halfHeight = capsuleShape->getHalfHeight();
 
+			const btScalar radius = capsuleShape->getRadius();
+			const btScalar sphereSize = 2. * radius;
+
+			const btVector3 radiusScale = btVector3(sphereSize, sphereSize, sphereSize);
+
+			const int numVertices = sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes;
+			const int numIndices = sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]);
+			const int * indices = textured_detailed_sphere_indices;
+			
+			btAlignedObjectArray<float> transformedVertices;
+			transformedVertices.resize(numVertices * 9);
+			for (size_t i = 0; i < transformedVertices.size(); ++i)
+				transformedVertices[i] = textured_detailed_sphere_vertices[i];
+			
+			for (int i = 0; i < numVertices; ++i)
+			{
+				transformedVertices[i * 9 + 0] *= radiusScale.x();
+				transformedVertices[i * 9 + 1] *= radiusScale.y();
+				transformedVertices[i * 9 + 2] *= radiusScale.z();
+				
+				if (transformedVertices[i * 9 + up] > 0)
+					transformedVertices[i * 9 + up] += halfHeight;
+				else
+					transformedVertices[i * 9 + up] -= halfHeight;
+			}
+			
+			appendPrim(&transformedVertices[0], numVertices, indices, numIndices, shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
+		}
+		else if (collisionShape->getShapeType() == MULTI_SPHERE_SHAPE_PROXYTYPE)
+		{
+			const btMultiSphereShape * multiSphereShape = (btMultiSphereShape*)collisionShape;
+			
+			for (int i = 0; i < multiSphereShape->getSphereCount(); ++i)
+			{
+				const btVector3 position = multiSphereShape->getSpherePosition(i);
+				const btScalar radius = multiSphereShape->getSphereRadius(i);
+				const btScalar sphereSize = 2. * radius;
+
+				btTransform transform;
+				transform.setIdentity();
+				transform.setOrigin(position);
+				
+				if (shapeTransform != nullptr)
+					transform = (*shapeTransform) * transform;
+				
 				appendPrim(
 					textured_detailed_sphere_vertices,
 					sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes,
 					textured_detailed_sphere_indices,
 					sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]),
-					&compound->getChildTransform(i),
+					&transform,
 					btVector3(sphereSize, sphereSize, sphereSize),
 					out_vertices,
 					out_indices);
 			}
-			else
+		}
+		else if (collisionShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
+		{
+			btCompoundShape * compound = (btCompoundShape*)collisionShape;
+			for (int i = 0; i < compound->getNumChildShapes(); ++i)
+				appendShape(compound->getChildShape(i), &compound->getChildTransform(i));
+		}
+		else if (collisionShape->getShapeType() == STATIC_PLANE_PROXYTYPE)
+		{
+			const btStaticPlaneShape * staticPlaneShape = static_cast<const btStaticPlaneShape*>(collisionShape);
+			const btScalar planeConst = staticPlaneShape->getPlaneConstant();
+			const btVector3 & planeNormal = staticPlaneShape->getPlaneNormal();
+			const btVector3 planeOrigin = planeNormal * planeConst;
+			
+			btVector3 vec0, vec1;
+			btPlaneSpace1(planeNormal, vec0, vec1);
+
+			const btScalar vecLen = 128;
+			const btVector3 verts[4] =
 			{
-				logDebug("unknown collision shape type: %d", collisionShape->getShapeType());
+				planeOrigin + vec0 * vecLen + vec1 * vecLen,
+				planeOrigin - vec0 * vecLen + vec1 * vecLen,
+				planeOrigin - vec0 * vecLen - vec1 * vecLen,
+				planeOrigin + vec0 * vecLen - vec1 * vecLen
+			};
+
+			const int indices[6] =
+			{
+				0, 1, 2, 0, 2, 3
+			};
+
+			FrameworkVertex vertices[4];
+
+			for (int i = 0; i < 4; i++)
+			{
+				const btVector3 & pos = verts[i];
+
+				vertices[i].xyzw[0] = pos[0];
+				vertices[i].xyzw[1] = pos[1];
+				vertices[i].xyzw[2] = pos[2];
+				vertices[i].xyzw[3] = 1.;
+				vertices[i].normal[0] = planeNormal[0];
+				vertices[i].normal[1] = planeNormal[1];
+				vertices[i].normal[2] = planeNormal[2];
 			}
+
+			vertices[0].uv[0] = +vecLen / 2;
+			vertices[0].uv[1] = +vecLen / 2;
+			vertices[1].uv[0] = -vecLen / 2;
+			vertices[1].uv[1] = +vecLen / 2;
+			vertices[2].uv[0] = -vecLen / 2;
+			vertices[2].uv[1] = -vecLen / 2;
+			vertices[3].uv[0] = +vecLen / 2;
+			vertices[3].uv[1] = -vecLen / 2;
+
+			appendPrim((float*)vertices, 4, indices, 6, shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
 		}
-	}
-	else if (collisionShape->getShapeType() == STATIC_PLANE_PROXYTYPE)
-	{
-		const btStaticPlaneShape * staticPlaneShape = static_cast<const btStaticPlaneShape*>(collisionShape);
-		const btScalar planeConst = staticPlaneShape->getPlaneConstant();
-		const btVector3 & planeNormal = staticPlaneShape->getPlaneNormal();
-		const btVector3 planeOrigin = planeNormal * planeConst;
-		
-		btVector3 vec0, vec1;
-		btPlaneSpace1(planeNormal, vec0, vec1);
-
-		const btScalar vecLen = 128;
-		const btVector3 verts[4] =
+		else if (collisionShape->getShapeType() == TERRAIN_SHAPE_PROXYTYPE)
 		{
-			planeOrigin + vec0 * vecLen + vec1 * vecLen,
-			planeOrigin - vec0 * vecLen + vec1 * vecLen,
-			planeOrigin - vec0 * vecLen - vec1 * vecLen,
-			planeOrigin + vec0 * vecLen - vec1 * vecLen
-		};
-
-		const int indices[6] =
-		{
-			0, 1, 2, 0, 2, 3
-		};
-
-		FrameworkVertex vertices[4];
-
-		for (int i = 0; i < 4; i++)
-		{
-			const btVector3 & pos = verts[i];
-
-			vertices[i].xyzw[0] = pos[0];
-			vertices[i].xyzw[1] = pos[1];
-			vertices[i].xyzw[2] = pos[2];
-			vertices[i].xyzw[3] = 1.;
-			vertices[i].normal[0] = planeNormal[0];
-			vertices[i].normal[1] = planeNormal[1];
-			vertices[i].normal[2] = planeNormal[2];
+			const btHeightfieldTerrainShape * heightField = static_cast<const btHeightfieldTerrainShape*>(collisionShape);
+			
+			btVector3 aabbMin(-BT_LARGE_FLOAT, -BT_LARGE_FLOAT, -BT_LARGE_FLOAT);
+			btVector3 aabbMax(+BT_LARGE_FLOAT, +BT_LARGE_FLOAT, +BT_LARGE_FLOAT);
+			
+			MyTriangleCollector2 triangleCollector(aabbMin, aabbMax);
+			if (heightField->getUserValue3())
+				triangleCollector.m_textureScaling = heightField->getUserValue3();
+			
+			heightField->processAllTriangles(&triangleCollector, aabbMin, aabbMax);
+			
+			// todo : textures for shapes
+			//int userImage = heightField->getUserIndex2();
+			//if (userImage == -1)
+			//	userImage = m_data->m_checkedTexture;
+			
+			appendPrim(
+				triangleCollector.m_vertices[0].xyzw,
+				triangleCollector.m_vertices.size(),
+				&triangleCollector.m_indices[0],
+				triangleCollector.m_indices.size(),
+				shapeTransform,
+				btVector3(1., 1., 1.),
+				out_vertices,
+				out_indices);
 		}
-
-		vertices[0].uv[0] = +vecLen / 2;
-		vertices[0].uv[1] = +vecLen / 2;
-		vertices[1].uv[0] = -vecLen / 2;
-		vertices[1].uv[1] = +vecLen / 2;
-		vertices[2].uv[0] = -vecLen / 2;
-		vertices[2].uv[1] = -vecLen / 2;
-		vertices[3].uv[0] = +vecLen / 2;
-		vertices[3].uv[1] = -vecLen / 2;
-
-		appendPrim((float*)vertices, 4, indices, 6, nullptr, btVector3(1., 1., 1.), out_vertices, out_indices);
-	}
-	else if (collisionShape->getShapeType() == TERRAIN_SHAPE_PROXYTYPE)
-	{
-		const btHeightfieldTerrainShape * heightField = static_cast<const btHeightfieldTerrainShape*>(collisionShape);
-		
-		btVector3 aabbMin, aabbMax;
-		for (int k = 0; k < 3; k++)
+		else if (collisionShape->getShapeType() == SOFTBODY_SHAPE_PROXYTYPE)
 		{
-			aabbMin[k] = -BT_LARGE_FLOAT;
-			aabbMax[k] = +BT_LARGE_FLOAT;
+			btAlignedObjectArray<FrameworkVertex> vertices;
+			btAlignedObjectArray<int> indices;
+			computeSoftBodyVertices(collisionShape, vertices, indices);
+			if (vertices.size() > 0)
+				appendPrim(vertices[0].xyzw, vertices.size(), &indices[0], indices.size(), shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
 		}
-		
-		MyTriangleCollector2 triangleCollector(aabbMin, aabbMax);
-		if (heightField->getUserValue3())
-			triangleCollector.m_textureScaling = heightField->getUserValue3();
-		
-		heightField->processAllTriangles(&triangleCollector, aabbMin, aabbMax);
-		
-		// todo : textures for shapes
-		//int userImage = heightField->getUserIndex2();
-		//if (userImage == -1)
-		//	userImage = m_data->m_checkedTexture;
-		
-		appendPrim(
-			triangleCollector.m_vertices[0].xyzw,
-			triangleCollector.m_vertices.size(),
-			&triangleCollector.m_indices[0],
-			triangleCollector.m_indices.size(),
-			nullptr,
-			btVector3(1., 1., 1.),
-			out_vertices,
-			out_indices);
-	}
-	else if (collisionShape->getShapeType() == SOFTBODY_SHAPE_PROXYTYPE)
-	{
-		btAlignedObjectArray<FrameworkVertex> vertices;
-		btAlignedObjectArray<int> indices;
-		computeSoftBodyVertices(collisionShape, vertices, indices);
-		if (vertices.size() > 0)
-			appendPrim(vertices[0].xyzw, vertices.size(), &indices[0], indices.size(), nullptr, btVector3(1., 1., 1.), out_vertices, out_indices);
-	}
-	else
-	{
-		logDebug("unknown collision shape type: %d", collisionShape->getShapeType());
-		
-		/*
-		TRIANGLE_SHAPE_PROXYTYPE
-		TETRAHEDRAL_SHAPE_PROXYTYPE
-		CONE_SHAPE_PROXYTYPE
-		CYLINDER_SHAPE_PROXYTYPE
-		SOFTBODY_SHAPE_PROXYTYPE
-		*/
-	}
+		else
+		{
+			logDebug("unknown collision shape type: %d", collisionShape->getShapeType());
+			
+			/*
+			TRIANGLE_SHAPE_PROXYTYPE
+			TETRAHEDRAL_SHAPE_PROXYTYPE
+			CONE_SHAPE_PROXYTYPE
+			CYLINDER_SHAPE_PROXYTYPE
+			*/
+		}
+	};
+	
+	appendShape(collisionShape, nullptr);
 	
 	if (out_indices.size() > 0)
 	{
@@ -674,36 +635,16 @@ static const btVector4 sColors[4] =
 	btVector4(60. / 256., 186. / 256., 84. / 256., 1),
 	btVector4(244. / 256., 194. / 256., 13. / 256., 1),
 	btVector4(219. / 256., 50. / 256., 54. / 256., 1),
-	btVector4(72. / 256., 133. / 256., 237. / 256., 1),
-	//btVector4(1,1,0,1),
+	btVector4(72. / 256., 133. / 256., 237. / 256., 1)
 };
-
-static bool shapePointerCompareFunc(const btCollisionObject * colA, const btCollisionObject * colB)
-{
-	auto * a = colA->getCollisionShape();
-	auto * b = colB->getCollisionShape();
-	return (uintptr_t)a < (uintptr_t)b;
-}
 
 void FrameworkGUIHelperInterface::autogenerateGraphicsObjects(btDiscreteDynamicsWorld * rbWorld)
 {
-	// sort the collision objects based on collision shape, the gfx library requires instances that re-use a shape to be added after eachother
-
-	btAlignedObjectArray<btCollisionObject*> sortedObjects;
-	sortedObjects.reserve(rbWorld->getNumCollisionObjects());
-	
 	for (int i = 0; i < rbWorld->getNumCollisionObjects(); i++)
 	{
 		btCollisionObject * colObj = rbWorld->getCollisionObjectArray()[i];
-		sortedObjects.push_back(colObj);
-	}
-	
-	sortedObjects.quickSort(shapePointerCompareFunc);
-	
-	for (int i = 0; i < sortedObjects.size(); i++)
-	{
-		btCollisionObject * colObj = sortedObjects[i];
 		
+		// assign soft body ptr when this is a soft body object
 		btSoftBody * sb = btSoftBody::upcast(colObj);
 		if (sb != nullptr)
 			colObj->getCollisionShape()->setUserPointer(sb);
