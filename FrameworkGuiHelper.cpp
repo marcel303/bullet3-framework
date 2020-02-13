@@ -389,6 +389,30 @@ void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollision
 			if (vertices.size() > 0)
 				appendPrim(&vertices[0], vertices.size(), &indices[0], indices.size(), shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
 		}
+		else if (collisionShape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE)
+		{
+			const btTriangleMeshShape * triangleMesh = static_cast<const btTriangleMeshShape*>(collisionShape);
+
+			btVector3 aabbMin(-BT_LARGE_FLOAT, -BT_LARGE_FLOAT, -BT_LARGE_FLOAT);
+			btVector3 aabbMax(+BT_LARGE_FLOAT, +BT_LARGE_FLOAT, +BT_LARGE_FLOAT);
+			
+			MyTriangleCollector2 triangleCollector(aabbMin, aabbMax);
+			
+			triangleMesh->getMeshInterface()->InternalProcessAllTriangles(&triangleCollector, aabbMin, aabbMax);
+			
+			if (triangleCollector.m_vertices.size() > 0)
+			{
+				appendPrim(
+					&triangleCollector.m_vertices[0],
+					triangleCollector.m_vertices.size(),
+					&triangleCollector.m_indices[0],
+					triangleCollector.m_indices.size(),
+					shapeTransform,
+					btVector3(1., 1., 1.),
+					out_vertices,
+					out_indices);
+			}
+		}
 		else if (collisionShape->getShapeType() == CONVEX_TRIANGLEMESH_SHAPE_PROXYTYPE)
 		{
 			const btConvexTriangleMeshShape * convexMesh = static_cast<const btConvexTriangleMeshShape*>(collisionShape);
