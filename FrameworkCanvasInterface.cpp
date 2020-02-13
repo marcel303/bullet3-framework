@@ -2,18 +2,6 @@
 #include "FrameworkCanvasInterface.h"
 #include <map>
 
-struct FrameworkCanvas
-{
-	uint8_t * pixels = nullptr;
-	int sx = 0;
-	int sy = 0;
-	
-	uint8_t * getLine(const int y) { return pixels + y * sx * 4; }
-};
-
-static std::map<int, FrameworkCanvas*> m_canvases;
-static int m_nextCanvasId = 1;
-
 FrameworkCanvasInterface::~FrameworkCanvasInterface()
 {
 }
@@ -21,6 +9,7 @@ FrameworkCanvasInterface::~FrameworkCanvasInterface()
 int FrameworkCanvasInterface::createCanvas(const char* canvasName, int width, int height, int xPos, int yPos)
 {
 	const int id = m_nextCanvasId++;
+	Assert(m_canvases[id] == nullptr);
 	
 	auto *& canvas = m_canvases[id];
 	canvas = new FrameworkCanvas();
@@ -33,10 +22,17 @@ int FrameworkCanvasInterface::createCanvas(const char* canvasName, int width, in
 
 void FrameworkCanvasInterface::destroyCanvas(int canvasId)
 {
-	auto *& canvas = m_canvases[canvasId];
-	
-	delete canvas;
-	canvas = nullptr;
+	auto i = m_canvases.find(canvasId);
+	Assert(i != m_canvases.end());
+	if (i != m_canvases.end())
+	{
+		auto *& canvas = i->second;
+		
+		delete canvas;
+		canvas = nullptr;
+		
+		m_canvases.erase(i);
+	}
 }
 
 void FrameworkCanvasInterface::setPixel(int canvasId, int x, int y, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha)
@@ -87,6 +83,16 @@ void FrameworkCanvasInterface::getPixel(int canvasId, int x, int y, unsigned cha
 
 void FrameworkCanvasInterface::refreshImageData(int canvasId)
 {
+	auto i = m_canvases.find(canvasId);
+	Assert(i != m_canvases.end());
+	if (i != m_canvases.end())
+	{
+		auto * canvas = i->second;
+		
+		freeTexture(canvas->textureId);
+		
+		canvas->textureId = createTextureFromRGBA8(canvas->pixels, canvas->sx, canvas->sy, false, true);
+	}
 }
 
 //

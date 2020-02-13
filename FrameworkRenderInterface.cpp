@@ -268,6 +268,7 @@ int FrameworkRenderInterface::registerGraphicsInstance(int shapeId, const float*
 	Assert(shapeId > 0);
 	
 	const int id = m_nextGraphicsInstanceId++;
+	Assert(m_graphicsInstances[id] == nullptr);
 	
 	auto *& instance = m_graphicsInstances[id];
 	instance = new FrameworkGraphicsInstance();
@@ -356,6 +357,7 @@ void FrameworkRenderInterface::drawTexturedTriangleMesh(float worldPosition[3], 
 int FrameworkRenderInterface::registerShape(const float* vertices, int numvertices, const int* indices, int numIndices, int primitiveType, int textureId)
 {
 	const int id = m_nextGraphicsShapeId++;
+	Assert(m_graphicsShapes[id] == nullptr);
 	
 	auto *& shape = m_graphicsShapes[id];
 	shape = new FrameworkGraphicsShape();
@@ -428,6 +430,7 @@ static uint8_t * convertTextureToRGBA(const uint8_t * src, int sx, int sy)
 int FrameworkRenderInterface::registerTexture(const unsigned char* texels, int width, int height, bool flipPixelsY)
 {
 	const int id = m_nextTextureId++;
+	Assert(m_textures[id] == nullptr);
 	
 	auto *& texture = m_textures[id];
 	texture = new GxTexture();
@@ -504,6 +507,8 @@ void FrameworkRenderInterface::removeTexture(int textureId)
 		
 		delete texture;
 		texture = nullptr;
+		
+		m_textures.erase(i);
 	}
 }
 

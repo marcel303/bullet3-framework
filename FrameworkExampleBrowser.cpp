@@ -605,6 +605,25 @@ static void doImGui(FrameworkImGuiContext & guiContext)
 			}
 		}
 		ImGui::End();
+		
+		auto * canvasInterface = static_cast<FrameworkCanvasInterface*>(s_app->m_2dCanvasInterface);
+		
+		for (auto & i : canvasInterface->m_canvases)
+		{
+			auto * canvas = i.second;
+			
+			if (canvas->textureId == 0)
+				continue;
+			
+			ImGui::PushID(canvas);
+			ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_Once);
+			if (ImGui::Begin("Canvas", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				ImGui::Image(canvas->textureId, ImVec2(canvas->sx, canvas->sy));
+			}
+			ImGui::End();
+			ImGui::PopID();
+		}
 	}
 	guiContext.processEnd();
 }
@@ -671,10 +690,6 @@ int main(int argc, char * argv[])
 			pushDepthTest(false, DEPTH_LESS);
 			{
 				projectScreen2d();
-				
-				auto * canvasInterface = static_cast<FrameworkCanvasInterface*>(app->m_2dCanvasInterface);
-				canvasInterface->drawCanvas(0, 0);
-			
 				guiContext.draw();
 			}
 			popDepthTest();
