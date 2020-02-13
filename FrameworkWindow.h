@@ -5,6 +5,8 @@
 class FrameworkWindow : public CommonWindowInterface
 {
 	float m_backgroundColor[3] = { 1.f, 1.f, 1.f };
+	int m_windowSx = 0;
+	int m_windowSy = 0;
 	
 	b3MouseMoveCallback m_mouseMoveCallback = nullptr;
 	b3MouseButtonCallback m_mouseButtonCallback = nullptr;

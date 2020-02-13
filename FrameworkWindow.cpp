@@ -14,6 +14,8 @@ void FrameworkWindow::createDefaultWindow(int width, int height, const char * ti
 	framework.msaaLevel = 4;
 	framework.enableRealTimeEditing = true;
 	framework.init(width, height);
+	
+	framework.getCurrentViewportSize(m_windowSx, m_windowSy);
 }
 
 void FrameworkWindow::createWindow(const b3gWindowConstructionInfo & ci)
@@ -61,6 +63,18 @@ void FrameworkWindow::runMainLoop()
 			else if (e.type == SDL_KEYUP)
 				m_keyboardCallback(e.key.keysym.sym, 0);
 		}
+	}
+	
+	int viewSx;
+	int viewSy;
+	framework.getCurrentViewportSize(viewSx, viewSy);
+	if (viewSx != m_windowSx || viewSy != m_windowSy)
+	{
+		m_windowSx = viewSx;
+		m_windowSy = viewSy;
+		
+		if (m_resizeCallback != nullptr)
+			m_resizeCallback(viewSx, viewSy);
 	}
 }
 
