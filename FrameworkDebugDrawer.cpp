@@ -72,6 +72,7 @@ void FrameworkDebugDrawer::flushLines()
 {
 	if (m_numLines > 0)
 	{
+		pushDepthBias(1, 1);
 		gxBegin(GX_LINES);
 		{
 			for (int i = 0; i < m_numLines; ++i)
@@ -85,6 +86,7 @@ void FrameworkDebugDrawer::flushLines()
 			}
 		}
 		gxEnd();
+		popDepthBias();
 		
 		m_numLines = 0;
 	}
