@@ -71,6 +71,7 @@ void FrameworkRenderInterface::calculateViewMatrix(Mat4x4 & viewMatrix) const
 
 FrameworkRenderInterface::~FrameworkRenderInterface()
 {
+	removeAllInstances();
 }
 
 void FrameworkRenderInterface::init()
@@ -156,7 +157,7 @@ CommonCameraInterface * FrameworkRenderInterface::getActiveCamera()
 
 void FrameworkRenderInterface::setActiveCamera(CommonCameraInterface * cam)
 {
-	Assert(false);
+	Assert(false); // not supported
 }
 
 void FrameworkRenderInterface::setLightPosition(const float lightPos[3])
@@ -172,22 +173,18 @@ void FrameworkRenderInterface::setLightPosition(const double lightPos[3])
 
 void FrameworkRenderInterface::setShadowMapResolution(int shadowMapResolution)
 {
-	Assert(false);
 }
 
 void FrameworkRenderInterface::setShadowMapWorldSize(float worldSize)
 {
-	Assert(false);
 }
 
 void FrameworkRenderInterface::setProjectiveTextureMatrices(const float viewMatrix[16], const float projectionMatrix[16])
 {
-	Assert(false);
 }
 
 void FrameworkRenderInterface::setProjectiveTexture(bool useProjectiveTexture)
 {
-	Assert(false);
 }
 
 void FrameworkRenderInterface::renderScene()
@@ -353,7 +350,7 @@ void FrameworkRenderInterface::drawPoint(const double* position, const double co
 
 void FrameworkRenderInterface::drawTexturedTriangleMesh(float worldPosition[3], float worldOrientation[4], const float* vertices, int numvertices, const unsigned int* indices, int numIndices, float color[4], int textureId, int vertexLayout)
 {
-	Assert(false);
+	Assert(false); // todo : implement drawTexturedTriangleMesh
 }
 
 int FrameworkRenderInterface::registerShape(const float* vertices, int numvertices, const int* indices, int numIndices, int primitiveType, int textureId)
@@ -446,10 +443,15 @@ int FrameworkRenderInterface::registerTexture(const unsigned char* texels, int w
 
 void FrameworkRenderInterface::updateTexture(int textureId, const unsigned char* texels, bool flipPixelsY)
 {
-	Assert(textureId != 0 && textureId != -1);
-	if (textureId != 0 && textureId != -1)
+	Assert(textureId > 0);
+	if (textureId <= 0)
+		return;
+	
+	auto i = m_textures.find(textureId);
+	Assert(i != m_textures.end());
+	if (i != m_textures.end())
 	{
-		auto * texture = m_textures[textureId];
+		auto * texture = i->second;
 		
 		auto * rgba = convertTextureToRGBA(texels, texture->sx, texture->sy);
 		texture->upload(rgba, 4, 0);
@@ -460,10 +462,16 @@ void FrameworkRenderInterface::updateTexture(int textureId, const unsigned char*
 
 void FrameworkRenderInterface::activateTexture(int textureId)
 {
-	Assert(textureId != 0 && textureId != -1);
-	if (textureId != 0 && textureId != -1)
+	Assert(textureId > 0);
+	if (textureId <= 0)
+		return;
+	
+	auto i = m_textures.find(textureId);
+	Assert(i != m_textures.end());
+	if (i != m_textures.end())
 	{
-		auto * texture = m_textures[textureId];
+		auto * texture = i->second;
+		
 		gxSetTexture(texture->id);
 	}
 }
@@ -482,17 +490,25 @@ void FrameworkRenderInterface::replaceTexture(int shapeId, int textureId)
 
 void FrameworkRenderInterface::removeTexture(int textureId)
 {
-	auto *& texture = m_textures[textureId];
+	Assert(textureId > 0);
+	if (textureId <= 0)
+		return;
 	
-	texture->free();
-	
-	delete texture;
-	texture = nullptr;
+	auto i = m_textures.find(textureId);
+	Assert(i != m_textures.end());
+	if (i != m_textures.end())
+	{
+		auto *& texture = i->second;
+		
+		texture->free();
+		
+		delete texture;
+		texture = nullptr;
+	}
 }
 
 void FrameworkRenderInterface::setPlaneReflectionShapeIndex(int index)
 {
-	Assert(false);
 }
 
 int FrameworkRenderInterface::getShapeIndexFromInstance(int instanceId)
@@ -503,7 +519,7 @@ int FrameworkRenderInterface::getShapeIndexFromInstance(int instanceId)
 
 bool FrameworkRenderInterface::readSingleInstanceTransformToCPU(float* position, float* orientation, int srcIndex)
 {
-	Assert(false);
+	Assert(false); // todo : read instance transform
 	return false;
 }
 
@@ -575,7 +591,7 @@ void FrameworkRenderInterface::writeSingleInstanceSpecularColorToCPU(const float
 
 void FrameworkRenderInterface::writeSingleInstanceFlagsToCPU(int flags, int srcIndex)
 {
-	Assert(false);
+	Assert(false); // todo : implement instance flags
 }
 
 int FrameworkRenderInterface::getTotalNumInstances() const

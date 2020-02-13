@@ -1,3 +1,4 @@
+#include "Debugging.h"
 #include "FrameworkCanvasInterface.h"
 #include <map>
 
@@ -40,10 +41,12 @@ void FrameworkCanvasInterface::destroyCanvas(int canvasId)
 
 void FrameworkCanvasInterface::setPixel(int canvasId, int x, int y, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha)
 {
-	auto * canvas = m_canvases[canvasId];
-	
-	if (canvas != nullptr)
+	auto i = m_canvases.find(canvasId);
+	Assert(i != m_canvases.end());
+	if (i != m_canvases.end())
 	{
+		auto * canvas = i->second;
+	
 		if (x >= 0 && x < canvas->sx &&
 			y >= 0 && y < canvas->sy)
 		{
@@ -59,10 +62,12 @@ void FrameworkCanvasInterface::setPixel(int canvasId, int x, int y, unsigned cha
 
 void FrameworkCanvasInterface::getPixel(int canvasId, int x, int y, unsigned char& red, unsigned char& green, unsigned char& blue, unsigned char& alpha)
 {
-	auto * canvas = m_canvases[canvasId];
-	
-	if (canvas != nullptr)
+	auto i = m_canvases.find(canvasId);
+	Assert(i != m_canvases.end());
+	if (i != m_canvases.end())
 	{
+		auto * canvas = i->second;
+		
 		if (x >= 0 && x < canvas->sx &&
 			y >= 0 && y < canvas->sy)
 		{
