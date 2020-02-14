@@ -79,7 +79,7 @@ app bullet3-standaloneMain-framework
 library bullet3-exampleBrowser-thirdPartyLibs
 	scan_files cpp path ../bullet3/examples/ThirdPartyLibs/BussIK
 
-	scan_files c   path ../bullet3/examples/ThirdPartyLibs/lua-5.2.3/lua_standalone
+	scan_files c   path ../bullet3/examples/ThirdPartyLibs/lua-5.2.3/src
 	header_path ../bullet3/examples/ThirdPartyLibs/lua-5.2.3/src expose
 	
 	scan_files cpp path ../bullet3/examples/ThirdPartyLibs/stb_image
@@ -103,7 +103,9 @@ library bullet3-exampleBrowser-exampleEntries
 
 	compile_definition INCLUDE_CLOTH_DEMOS *
 	compile_definition EXAMPLE_CONSOLE_ONLY *
-	
+	compile_definition ENABLE_LUA *
+# B3_ENABLE_TINY_AUDIO
+
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.cpp
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.h
 	add_files ../bullet3/examples/ExampleBrowser/InProcessExampleBrowser.cpp
@@ -154,6 +156,7 @@ library bullet3-exampleBrowser-exampleEntries
 		scan_files cpp path ../bullet3/examples/SharedMemory/plugins/collisionFilterPlugin
 		scan_files cpp path ../bullet3/examples/SharedMemory/plugins/pdControlPlugin
 		scan_files cpp path ../bullet3/examples/SharedMemory/plugins/tinyRendererPlugin
+		header_path ../bullet3/examples/SharedMemory
 	pop_group
 
 	scan_files h   path ../bullet3/examples traverse
