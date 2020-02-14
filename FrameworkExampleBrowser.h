@@ -16,8 +16,12 @@ public:
 	virtual bool init(int argc, char * argv[]) override final;
 
 	virtual void update(float deltaTime) override final;
+	
+	virtual void updateGraphics() override final { }
 
 	virtual bool requestedExit() override final;
+	
+	virtual void setSharedMemoryInterface(class SharedMemoryInterface* sharedMem) override final { }
 
 	static void registerFileImporter(const char * extension, CommonExampleInterface::CreateFunc * createFunc);
 };
