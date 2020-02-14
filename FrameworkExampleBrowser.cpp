@@ -52,6 +52,10 @@ static bool singleStepSimulation = false;
 
 //
 
+int gSharedMemoryKey = -1;
+
+//
+
 static void selectDemo(int demoIndex);
 static void deleteDemo();
 
