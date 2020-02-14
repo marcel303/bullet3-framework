@@ -78,7 +78,7 @@ app bullet3-standaloneMain-framework
 
 library bullet3-exampleBrowser-thirdPartyLibs
 	scan_files cpp path ../bullet3/examples/ThirdPartyLibs/BussIK
-	
+
 	scan_files c   path ../bullet3/examples/ThirdPartyLibs/lua-5.2.3/lua_standalone
 	header_path ../bullet3/examples/ThirdPartyLibs/lua-5.2.3/src expose
 	
@@ -102,9 +102,12 @@ library bullet3-exampleBrowser-exampleEntries
 	depend_library bullet3-softBody
 
 	compile_definition INCLUDE_CLOTH_DEMOS *
+	compile_definition EXAMPLE_CONSOLE_ONLY *
 	
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.cpp
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.h
+	add_files ../bullet3/examples/ExampleBrowser/InProcessExampleBrowser.cpp
+	add_files ../bullet3/examples/ExampleBrowser/InProcessExampleBrowser.h
 
 	push_group examples
 
@@ -143,6 +146,14 @@ library bullet3-exampleBrowser-exampleEntries
 	scan_files cpp path ../bullet3/examples/Vehicles
 	scan_files cpp path ../bullet3/examples/VoronoiFracture
 
+	pop_group
+
+	push_group sharedMemory
+		scan_files cpp path ../bullet3/examples/SharedMemory exclude_path ../bullet3/examples/SharedMemory/PhysicsClientTCP.cpp exclude_path ../bullet3/examples/SharedMemory/PhysicsClientUDP.cpp exclude_path ../bullet3/examples/SharedMemory/main.cpp
+		scan_files h   path ../bullet3/examples/SharedMemory
+		scan_files cpp path ../bullet3/examples/SharedMemory/plugins/collisionFilterPlugin
+		scan_files cpp path ../bullet3/examples/SharedMemory/plugins/pdControlPlugin
+		scan_files cpp path ../bullet3/examples/SharedMemory/plugins/tinyRendererPlugin
 	pop_group
 
 	scan_files h   path ../bullet3/examples traverse
