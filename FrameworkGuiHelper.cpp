@@ -25,51 +25,12 @@ void FrameworkGUIHelperInterface::createRigidBodyGraphicsObject(btRigidBody* bod
 
 void FrameworkGUIHelperInterface::createCollisionObjectGraphicsObject(btCollisionObject* body, const btVector3& color)
 {
-	if (body->getUserIndex() >= 0)
-		return;
-
-	const btCollisionShape * shape = body->getCollisionShape();
-	const btTransform startTransform = body->getWorldTransform();
-	
-	const int graphicsShapeId = shape->getUserIndex();
-	
-	if (graphicsShapeId >= 0)
-	{
-		const int graphicsInstanceId = m_renderInterface->registerGraphicsInstance(
-			graphicsShapeId,
-			startTransform.getOrigin(),
-			startTransform.getRotation(),
-			color,
-			btVector3(1., 1., 1.));
-		
-		body->setUserIndex(graphicsInstanceId);
-	}
+	::createCollisionObjectGraphicsObject(m_renderInterface, body, color);
 }
 
 void FrameworkGUIHelperInterface::createCollisionShapeGraphicsObject(btCollisionShape* collisionShape)
 {
-	// already has a graphics object ?
-	
-	if (collisionShape->getUserIndex() >= 0)
-		return;
-	
-	btAlignedObjectArray<ShapeVertex> vertices;
-	btAlignedObjectArray<int> indices;
-	
-	generateShapeMesh(collisionShape, vertices, indices);
-	
-	if (indices.size() > 0)
-	{
-		const int graphicsShapeId = m_renderInterface->registerShape(
-			vertices[0].xyzw,
-			vertices.size(),
-			&indices[0],
-			indices.size(),
-			B3_GL_TRIANGLES,
-			0);
-
-		collisionShape->setUserIndex(graphicsShapeId);
-	}
+	::createCollisionShapeGraphicsObject(m_renderInterface, collisionShape);
 }
 
 void FrameworkGUIHelperInterface::syncPhysicsToGraphics(const btDiscreteDynamicsWorld* rbWorld)
@@ -294,34 +255,9 @@ void FrameworkGUIHelperInterface::setProjectiveTexture(bool useProjectiveTexture
 {
 }
 
-static const btVector4 sColors[4] =
-{
-	btVector4(60. / 256., 186. / 256., 84. / 256., 1),
-	btVector4(244. / 256., 194. / 256., 13. / 256., 1),
-	btVector4(219. / 256., 50. / 256., 54. / 256., 1),
-	btVector4(72. / 256., 133. / 256., 237. / 256., 1)
-};
-
 void FrameworkGUIHelperInterface::autogenerateGraphicsObjects(btDiscreteDynamicsWorld * rbWorld)
 {
-	for (int i = 0; i < rbWorld->getNumCollisionObjects(); i++)
-	{
-		btCollisionObject * colObj = rbWorld->getCollisionObjectArray()[i];
-		
-		// assign soft body ptr when this is a soft body object
-		btSoftBody * sb = btSoftBody::upcast(colObj);
-		if (sb != nullptr)
-			colObj->getCollisionShape()->setUserPointer(sb);
-	
-		createCollisionShapeGraphicsObject(colObj->getCollisionShape());
-		int colorIndex = colObj->getBroadphaseHandle()->getUid() & 3;
-
-		btVector4 color = sColors[colorIndex];
-		if (colObj->getCollisionShape()->getShapeType() == STATIC_PLANE_PROXYTYPE)
-			color.setValue(1, 1, 1, 1);
-		
-		createCollisionObjectGraphicsObject(colObj, color);
-	}
+	::autogenerateGraphicsObjects(m_renderInterface, rbWorld);
 }
 
 void FrameworkGUIHelperInterface::drawText3D(const char* txt, float posX, float posY, float posZ, float size)
@@ -370,4 +306,125 @@ void FrameworkGUIHelperInterface::setVisualizerFlagCallback(VisualizerFlagCallba
 
 void FrameworkGUIHelperInterface::dumpFramesToVideo(const char* mp4FileName)
 {
+}
+
+//
+
+void createCollisionObjectGraphicsObject(CommonRenderInterface * renderInterface, btCollisionObject * body, const btVector3 & color)
+{
+	if (body->getUserIndex() >= 0)
+		return;
+
+	const btCollisionShape * shape = body->getCollisionShape();
+	const btTransform startTransform = body->getWorldTransform();
+	
+	const int graphicsShapeId = shape->getUserIndex();
+	
+	if (graphicsShapeId >= 0)
+	{
+		const int graphicsInstanceId = renderInterface->registerGraphicsInstance(
+			graphicsShapeId,
+			startTransform.getOrigin(),
+			startTransform.getRotation(),
+			color,
+			btVector3(1., 1., 1.));
+		
+		body->setUserIndex(graphicsInstanceId);
+	}
+}
+
+void createCollisionShapeGraphicsObject(CommonRenderInterface * renderInterface, btCollisionShape * collisionShape)
+{
+	// already has a graphics object ?
+	
+	if (collisionShape->getUserIndex() >= 0)
+		return;
+	
+	btAlignedObjectArray<ShapeVertex> vertices;
+	btAlignedObjectArray<int> indices;
+	
+	generateShapeMesh(collisionShape, vertices, indices);
+	
+	if (indices.size() > 0)
+	{
+		const int graphicsShapeId = renderInterface->registerShape(
+			vertices[0].xyzw,
+			vertices.size(),
+			&indices[0],
+			indices.size(),
+			B3_GL_TRIANGLES,
+			0);
+
+		collisionShape->setUserIndex(graphicsShapeId);
+	}
+}
+
+static const btVector4 sColors[4] =
+{
+	btVector4(60. / 256., 186. / 256., 84. / 256., 1),
+	btVector4(244. / 256., 194. / 256., 13. / 256., 1),
+	btVector4(219. / 256., 50. / 256., 54. / 256., 1),
+	btVector4(72. / 256., 133. / 256., 237. / 256., 1)
+};
+
+void autogenerateGraphicsObjects(CommonRenderInterface * renderInterface, btDiscreteDynamicsWorld * rbWorld)
+{
+	for (int i = 0; i < rbWorld->getNumCollisionObjects(); i++)
+	{
+		btCollisionObject * colObj = rbWorld->getCollisionObjectArray()[i];
+		
+		// assign soft body ptr when this is a soft body object
+		btSoftBody * sb = btSoftBody::upcast(colObj);
+		if (sb != nullptr)
+			colObj->getCollisionShape()->setUserPointer(sb);
+	
+		createCollisionShapeGraphicsObject(renderInterface, colObj->getCollisionShape());
+		int colorIndex = colObj->getBroadphaseHandle()->getUid() & 3;
+
+		btVector4 color = sColors[colorIndex];
+		if (colObj->getCollisionShape()->getShapeType() == STATIC_PLANE_PROXYTYPE)
+			color.setValue(1, 1, 1, 1);
+		
+		createCollisionObjectGraphicsObject(renderInterface, colObj, color);
+	}
+}
+
+void syncPhysicsToGraphics(const btDiscreteDynamicsWorld * rbWorld, CommonRenderInterface * renderInterface)
+{
+	const int numCollisionObjects = rbWorld->getNumCollisionObjects();
+	
+	{
+		B3_PROFILE("write all InstanceTransformToCPU");
+		
+		for (int i = 0; i < numCollisionObjects; i++)
+		{
+			//B3_PROFILE("writeSingleInstanceTransformToCPU");
+			
+			const btCollisionObject * colObj = rbWorld->getCollisionObjectArray()[i];
+			const btCollisionShape * collisionShape = colObj->getCollisionShape();
+			
+			if (collisionShape->getShapeType() == SOFTBODY_SHAPE_PROXYTYPE && collisionShape->getUserIndex() >= 0)
+			{
+				btAlignedObjectArray<ShapeVertex> vertices;
+				btAlignedObjectArray<int> indices;
+				computeSoftBodyVertices(collisionShape, vertices, indices);
+				if (vertices.size() > 0)
+					renderInterface->updateShape(collisionShape->getUserIndex(), vertices[0].xyzw);
+				continue;
+			}
+			
+			const btVector3 & position = colObj->getWorldTransform().getOrigin();
+			const btQuaternion rotation = colObj->getWorldTransform().getRotation();
+			const int instanceId = colObj->getUserIndex();
+			
+			if (instanceId >= 0)
+			{
+				renderInterface->writeSingleInstanceTransformToCPU(position, rotation, instanceId);
+			}
+		}
+	}
+	{
+		B3_PROFILE("writeTransforms");
+		renderInterface->writeTransforms();
+	}
 }
