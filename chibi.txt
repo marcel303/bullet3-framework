@@ -60,6 +60,8 @@ library bullet3-framework
 	add_files FrameworkRenderInterface.h
 	add_files FrameworkWindow.cpp
 	add_files FrameworkWindow.h
+	add_files ShapeGeneration.cpp
+	add_files ShapeGeneration.h
 	add_files SimpleFrameworkApp.cpp
 	add_files SimpleFrameworkApp.h
 	add_files SimpleCamera.cpp
