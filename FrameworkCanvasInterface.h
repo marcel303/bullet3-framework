@@ -2,6 +2,7 @@
 
 #include "CommonInterfaces/Common2dCanvasInterface.h"
 #include "framework.h"
+#include "gx_texture.h"
 #include <map>
 #include <stdint.h>
 
@@ -11,11 +12,11 @@ struct FrameworkCanvas
 	int sx = 0;
 	int sy = 0;
 	
-	GxTextureId textureId = 0;
+	GxTexture texture;
 	
 	~FrameworkCanvas()
 	{
-		freeTexture(textureId);
+		texture.free();
 		
 		delete [] pixels;
 		pixels = nullptr;
@@ -39,6 +40,4 @@ public:
 	virtual void getPixel(int canvasId, int x, int y, unsigned char& red, unsigned char& green, unsigned char& blue, unsigned char& alpha) override final;
 
 	virtual void refreshImageData(int canvasId) override final;
-	
-	void drawCanvas(const int x, const int y) const;
 };

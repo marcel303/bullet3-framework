@@ -616,14 +616,14 @@ static void doImGui(FrameworkImGuiContext & guiContext)
 		{
 			auto * canvas = i.second;
 			
-			if (canvas->textureId == 0)
+			if (canvas->texture.id == 0)
 				continue;
 			
 			ImGui::PushID(canvas);
 			ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_Once);
 			if (ImGui::Begin("Canvas", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 			{
-				ImGui::Image(canvas->textureId, ImVec2(canvas->sx, canvas->sy));
+				ImGui::Image(canvas->texture.id, ImVec2(canvas->sx, canvas->sy));
 			}
 			ImGui::End();
 			ImGui::PopID();

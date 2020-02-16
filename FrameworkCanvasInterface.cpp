@@ -16,6 +16,7 @@ int FrameworkCanvasInterface::createCanvas(const char* canvasName, int width, in
 	canvas->pixels = new uint8_t[width * height * 4];
 	canvas->sx = width;
 	canvas->sy = height;
+	canvas->texture.allocate(width, height, GX_RGBA8_UNORM, false, true);
 	
 	return id;
 }
@@ -89,38 +90,6 @@ void FrameworkCanvasInterface::refreshImageData(int canvasId)
 	{
 		auto * canvas = i->second;
 		
-		freeTexture(canvas->textureId);
-		
-		canvas->textureId = createTextureFromRGBA8(canvas->pixels, canvas->sx, canvas->sy, false, true);
-	}
-}
-
-//
-
-#include "framework.h"
-
-void FrameworkCanvasInterface::drawCanvas(const int x, const int y) const
-{
-	for (auto & i : m_canvases)
-	{
-		auto * canvas = i.second;
-		
-		if (canvas == nullptr)
-			continue;
-		
-		gxPushMatrix();
-		{
-			gxTranslatef(x, y, 0);
-			
-			auto textureId = createTextureFromRGBA8(canvas->pixels, canvas->sx, canvas->sy, false, true);
-			
-			gxSetTexture(textureId);
-			setColor(colorWhite);
-			drawRect(0, 0, canvas->sx, canvas->sy);
-			gxSetTexture(0);
-			
-			freeTexture(textureId);
-		}
-		gxPopMatrix();
+		canvas->texture.upload(canvas->pixels, 4, 0);
 	}
 }
