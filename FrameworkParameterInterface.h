@@ -18,6 +18,8 @@ public:
 	{
 		ParamType type = kParamType_Undefined;
 		
+		std::string name;
+		
 		SliderParams slider;
 		ButtonParams button;
 		ComboBoxParams comboBox;
@@ -43,6 +45,7 @@ public:
 		p.type = kParamType_Slider;
 		p.slider = params;
 		p.value = *params.m_paramValuePointer;
+		p.name = params.m_name;
 		m_params.push_back(p);
 	}
 	
@@ -52,6 +55,7 @@ public:
 		p.type = kParamType_Button;
 		p.button = params;
 		p.value = params.m_initialState ? 1.f : 0.f;
+		p.name = params.m_name;
 		m_params.push_back(p);
 	}
 	
