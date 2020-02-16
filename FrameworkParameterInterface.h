@@ -44,7 +44,6 @@ public:
 		Param p;
 		p.type = kParamType_Slider;
 		p.slider = params;
-		p.value = *params.m_paramValuePointer;
 		p.name = params.m_name;
 		m_params.push_back(p);
 	}
@@ -74,17 +73,30 @@ public:
 		{
 			if (param.type == kParamType_Slider)
 			{
-				*param.slider.m_paramValuePointer = param.value;
+				float value = *param.slider.m_paramValuePointer;
+				if (value < param.slider.m_minVal)
+					value = param.slider.m_minVal;
+				if (value > param.slider.m_maxVal)
+					value = param.slider.m_maxVal;
+				*param.slider.m_paramValuePointer = value;
+				
 				if (param.slider.m_callback != nullptr)
-					param.slider.m_callback(param.value, param.slider.m_userPointer);
+					param.slider.m_callback(value, param.slider.m_userPointer);
 			}
 			else if (param.type == kParamType_ComboBox)
 			{
+				int value = (int)param.value;
+				if (value < 0)
+					value = 0;
+				if (value > param.comboBox.m_numItems - 1)
+					value = param.comboBox.m_numItems - 1;
+				param.value = value;
+				
 				if (param.comboBox.m_callback != nullptr)
 				{
 					param.comboBox.m_callback(
 						param.comboBox.m_comboboxId,
-						param.comboBox.m_items[(int)param.value],
+						param.comboBox.m_items[value],
 						param.comboBox.m_userPointer);
 				}
 			}

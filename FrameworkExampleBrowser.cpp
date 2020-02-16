@@ -107,6 +107,8 @@ static void deleteDemo()
 		
 		s_app->m_renderer->removeAllInstances();
 		
+		s_app->m_parameterInterface->removeAllParameters();
+		
 		delete sCurrentDemo;
 		sCurrentDemo = nullptr;
 	}
@@ -473,10 +475,10 @@ static void doParameterInterface(FrameworkParameterInterface * paramInterface)
 			{
 				if (param.slider.m_clampToIntegers)
 				{
-					int value = *param.slider.m_paramValuePointer;
+					int value = param.value;
 					if (ImGui::SliderInt(param.name.c_str(), &value, param.slider.m_minVal, param.slider.m_maxVal))
 					{
-						param.value = value;
+						*param.slider.m_paramValuePointer = value;
 						if (param.slider.m_callback != nullptr)
 							param.slider.m_callback(value, param.slider.m_userPointer);
 					}
@@ -486,7 +488,7 @@ static void doParameterInterface(FrameworkParameterInterface * paramInterface)
 					float value = *param.slider.m_paramValuePointer;
 					if (ImGui::SliderFloat(param.name.c_str(), &value, param.slider.m_minVal, param.slider.m_maxVal))
 					{
-						param.value = value;
+						*param.slider.m_paramValuePointer = value;
 						if (param.slider.m_callback != nullptr)
 							param.slider.m_callback(value, param.slider.m_userPointer);
 					}
@@ -611,6 +613,21 @@ static void doImGui(FrameworkImGuiContext & guiContext)
 		}
 		ImGui::End();
 		
+		auto * parameterInterface = static_cast<FrameworkParameterInterface*>(s_app->m_parameterInterface);
+		
+		if (parameterInterface->m_params.empty() == false)
+		{
+			ImGui::SetNextWindowPos(ImVec2(viewSx - 340, 30), ImGuiCond_Once);
+			ImGui::SetNextWindowSize(ImVec2(320, 0), ImGuiCond_Once);
+			if (ImGui::Begin("Parameters"))
+			{
+				ImGui::PushItemWidth(140.f);
+				doParameterInterface(parameterInterface);
+				ImGui::PopItemWidth();
+			}
+			ImGui::End();
+		}
+		
 		auto * canvasInterface = static_cast<FrameworkCanvasInterface*>(s_app->m_2dCanvasInterface);
 		
 		if (canvasInterface->m_canvases.empty() == false)
@@ -641,7 +658,7 @@ int main(int argc, char * argv[])
 {
 	setupPaths(CHIBI_RESOURCE_PATHS);
 	
-	s_app = new SimpleFrameworkApp("Example Browser", 800, 600);
+	s_app = new SimpleFrameworkApp("Example Browser", 1200, 600);
 	
 	s_window = s_app->m_window;
 	
