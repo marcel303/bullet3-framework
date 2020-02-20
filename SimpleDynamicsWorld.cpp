@@ -1,33 +1,14 @@
 #include "SimpleDynamicsWorld.h"
 
-#include "btBulletDynamicsCommon.h"
-#include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
 
-static btRigidBody * createRigidBody(
-	btDynamicsWorld * dynamicsWorld,
-	float mass,
-	const btTransform & startTransform,
-	btCollisionShape * shape,
-	const btVector4 & color = btVector4(1, 0, 0, 1))
+#include "FrameworkDebugDrawer.h"
+
+void SimpleDynamicsWorld::init()
 {
-	btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
+	Settings settings;
 	
-	const bool isDynamic = (mass != 0.f);
-
-	btVector3 localInertia(0, 0, 0);
-	if (isDynamic)
-		shape->calculateLocalInertia(mass, localInertia);
-
-	auto * myMotionState = new btDefaultMotionState(startTransform);
-	btRigidBody::btRigidBodyConstructionInfo cInfo(mass, myMotionState, shape, localInertia);
-	auto * body = new btRigidBody(cInfo);
-
-	body->setUserIndex(-1);
-	
-	dynamicsWorld->addRigidBody(body);
-	
-	return body;
+	init(settings);
 }
 
 void SimpleDynamicsWorld::init(Settings & settings)
@@ -56,10 +37,9 @@ void SimpleDynamicsWorld::init(Settings & settings)
 
 	//
 
-#if 0
 // todo : store debug drawer
 
-	auto * debugDrawer = new FrameworkDebugDrawer();
+	debugDrawer = new FrameworkDebugDrawer();
 	
 	debugDrawer->setDebugMode(
 		1*btIDebugDraw::DBG_DrawWireframe |
@@ -68,7 +48,6 @@ void SimpleDynamicsWorld::init(Settings & settings)
 		1*btIDebugDraw::DBG_DrawNormals);
 	
 	dynamicsWorld->setDebugDrawer(debugDrawer);
-#endif
 }
 
 void SimpleDynamicsWorld::shut()
@@ -116,9 +95,8 @@ void SimpleDynamicsWorld::shut()
 		}
 	}
 
-// todo
-	//delete debugDrawer;
-	//debugDrawer = nullptr;
+	delete debugDrawer;
+	debugDrawer = nullptr;
 	
 	delete dynamicsWorld;
 	dynamicsWorld = nullptr;
@@ -137,4 +115,35 @@ void SimpleDynamicsWorld::shut()
 
 	delete collisionConfiguration;
 	collisionConfiguration = nullptr;
+}
+
+
+btRigidBody * SimpleDynamicsWorld::createRigidBody(
+	const btTransform & transform,
+	float mass,
+	btCollisionShape * shape,
+	const btVector4 & color)
+{
+	btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
+	
+	const bool isDynamic = (mass != 0.f);
+
+	btVector3 localInertia(0, 0, 0);
+	if (isDynamic)
+		shape->calculateLocalInertia(mass, localInertia);
+
+	auto * motionState = new btDefaultMotionState(transform);
+	btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, shape, localInertia);
+	auto * body = new btRigidBody(cInfo);
+
+	body->setUserIndex(-1);
+	
+	dynamicsWorld->addRigidBody(body);
+	
+	return body;
+}
+
+void SimpleDynamicsWorld::debugDraw()
+{
+	dynamicsWorld->debugDrawWorld();
 }
