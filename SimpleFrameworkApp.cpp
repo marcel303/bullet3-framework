@@ -231,8 +231,7 @@ void SimpleFrameworkApp::registerGrid(int cells_x, int cells_z, float color0[4],
 	
 	const int cubeId = registerCubeShape(cubeExtents[0], cubeExtents[1], cubeExtents[2]);
 	
-	const b3Quaternion orn(0, 0, 0, 1);
-	const b3Vector3 center = b3MakeVector3(0, 0, 0, 1);
+	const b3Quaternion orientation(0, 0, 0, 1);
 	const b3Vector3 scaling = b3MakeVector3(1, 1, 1, 1);
 
 	for (int i = 0; i < cells_x; i++)
@@ -250,7 +249,7 @@ void SimpleFrameworkApp::registerGrid(int cells_x, int cells_z, float color0[4],
 				? b3MakeVector3((i + 0.5f) - cells_x * 0.5f, -halfHeight, (j + 0.5f) - cells_z * 0.5f)
 				: b3MakeVector3((i + 0.5f) - cells_x * 0.5f, (j + 0.5f) - cells_z * 0.5f, -halfHeight);
 			
-			m_renderer->registerGraphicsInstance(cubeId, center, orn, color, scaling);
+			m_renderer->registerGraphicsInstance(cubeId, center, orientation, color, scaling);
 		}
 	}
 }

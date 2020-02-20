@@ -195,7 +195,7 @@ void FrameworkRenderInterface::renderScene()
 void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 {
 	Mat4x4 viewMatrix;
-	calculateViewMatrix(viewMatrix);
+	gxGetMatrixf(GX_MODELVIEW, viewMatrix.m_v);
 	
 	const Vec3 lightPosition_view = viewMatrix.Mul4(light.position);
 	
@@ -205,7 +205,6 @@ void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 		lightPosition_view[0],
 		lightPosition_view[1],
 		lightPosition_view[2]);
-	const GxImmediateIndex u_tex = shader.getImmediateIndex("u_tex");
 	const GxImmediateIndex u_hasTex = shader.getImmediateIndex("u_hasTex");
 	const GxImmediateIndex u_color = shader.getImmediateIndex("u_color");
 	const GxImmediateIndex u_specularColor = shader.getImmediateIndex("u_specularColor");
@@ -228,7 +227,7 @@ void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 				const bool hasTex = shape->textureId > 0;
 				const GxTextureId textureId = hasTex ? m_textures[shape->textureId]->id : 0;
 				
-				shader.setTexture(u_tex, 0, hasTex ? textureId : 0, true, true);
+				shader.setTexture("u_tex", 0, hasTex ? textureId : 0, true, true);
 				shader.setImmediate(u_hasTex, hasTex ? 1.f : 0.f);
 				shader.setImmediate(u_color,
 					instance->color.r,
@@ -434,7 +433,15 @@ int FrameworkRenderInterface::registerTexture(const unsigned char* texels, int w
 	
 	auto *& texture = m_textures[id];
 	texture = new GxTexture();
-	texture->allocate(width, height, GX_RGBA8_UNORM, true, true);
+	
+	GxTextureProperties properties;
+	properties.dimensions.sx = width;
+	properties.dimensions.sy = height;
+	properties.format = GX_RGBA8_UNORM;
+	properties.sampling.filter = true;
+	properties.sampling.clamp = false;
+	properties.mipmapped = true;
+	texture->allocate(properties);
 	
 	auto * rgba = convertTextureToRGBA(texels, width, height);
 	texture->upload(rgba, 4, 0);
