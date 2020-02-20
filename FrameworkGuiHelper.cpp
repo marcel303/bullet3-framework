@@ -333,7 +333,7 @@ void createCollisionObjectGraphicsObject(CommonRenderInterface * renderInterface
 	}
 }
 
-void createCollisionShapeGraphicsObject(CommonRenderInterface * renderInterface, btCollisionShape * collisionShape)
+void createCollisionShapeGraphicsObject(CommonRenderInterface * renderInterface, btCollisionShape * collisionShape, const int textureId)
 {
 	// already has a graphics object ?
 	
@@ -353,7 +353,7 @@ void createCollisionShapeGraphicsObject(CommonRenderInterface * renderInterface,
 			&indices[0],
 			indices.size(),
 			B3_GL_TRIANGLES,
-			0);
+			textureId);
 
 		collisionShape->setUserIndex(graphicsShapeId);
 	}
@@ -367,8 +367,41 @@ static const btVector4 sColors[4] =
 	btVector4(72. / 256., 133. / 256., 237. / 256., 1)
 };
 
+static int createCheckeredTexture(CommonRenderInterface * renderInterface, int r, int g, int b)
+{
+	const int sx = 1024;
+	const int sy = 1024;
+	
+	uint8_t * texels = new uint8_t[sx * sy * 3];
+	memset(texels, 0xff, sx * sy * 3);
+	
+	for (int y = 0; y < 1024; ++y)
+	{
+		uint8_t * line = texels + y * sx * 3;
+		
+		for (int x = 0; x < 1024; ++x)
+		{
+			if (((x>>9) ^ (y>>9)) == 0)
+			{
+				line[x * 3 + 0] = r;
+				line[x * 3 + 1] = g;
+				line[x * 3 + 2] = b;
+			}
+		}
+	}
+	
+	const int textureId = renderInterface->registerTexture(texels, sx, sy);
+	
+	delete [] texels;
+	texels = nullptr;
+	
+	return textureId;
+}
+
 void autogenerateGraphicsObjects(CommonRenderInterface * renderInterface, btDiscreteDynamicsWorld * rbWorld)
 {
+	const int checkeredTextureId = createCheckeredTexture(renderInterface, 192, 192, 192);
+	
 	for (int i = 0; i < rbWorld->getNumCollisionObjects(); i++)
 	{
 		btCollisionObject * colObj = rbWorld->getCollisionObjectArray()[i];
@@ -378,7 +411,7 @@ void autogenerateGraphicsObjects(CommonRenderInterface * renderInterface, btDisc
 		if (sb != nullptr)
 			colObj->getCollisionShape()->setUserPointer(sb);
 	
-		createCollisionShapeGraphicsObject(renderInterface, colObj->getCollisionShape());
+		createCollisionShapeGraphicsObject(renderInterface, colObj->getCollisionShape(), checkeredTextureId);
 		int colorIndex = colObj->getBroadphaseHandle()->getUid() & 3;
 
 		btVector4 color = sColors[colorIndex];

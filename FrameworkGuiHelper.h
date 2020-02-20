@@ -107,7 +107,7 @@ struct FrameworkGUIHelperInterface : GUIHelperInterface
 class btDiscreteDynamicsWorld;
 
 void createCollisionObjectGraphicsObject(CommonRenderInterface * renderInterface, btCollisionObject * body, const btVector3 & color);
-void createCollisionShapeGraphicsObject(CommonRenderInterface * renderInterface, btCollisionShape * collisionShape);
+void createCollisionShapeGraphicsObject(CommonRenderInterface * renderInterface, btCollisionShape * collisionShape, const int textureId = -1);
 void autogenerateGraphicsObjects(CommonRenderInterface * renderInterface, btDiscreteDynamicsWorld * rbWorld);
 
 void syncPhysicsToGraphics(const btDiscreteDynamicsWorld * rbWorld, CommonRenderInterface * renderInterface);
