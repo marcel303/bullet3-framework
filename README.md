@@ -176,7 +176,8 @@ void init()
 {
 	debugDraw = new FrameworkDebugDrawer();
 	debugDraw->setDebugMode(
-		btIDebugDraw::DBG_DrawWireframe | 		btIDebugDraw::DBG_DrawAabb);
+		btIDebugDraw::DBG_DrawWireframe |
+		btIDebugDraw::DBG_DrawAabb);
 		
 	btDiscreteDynamicsWorld * rbWorld = ...;
 	rbWorld->setDebugDrawer(debugDraw);
