@@ -107,6 +107,8 @@ static void deleteDemo()
 		
 		s_app->m_renderer->removeAllInstances();
 		
+		s_app->m_parameterInterface->removeAllParameters();
+		
 		delete sCurrentDemo;
 		sCurrentDemo = nullptr;
 	}
@@ -117,6 +119,7 @@ static void deleteDemo()
 static b3KeyboardCallback prevKeyboardCallback = nullptr;
 static b3MouseMoveCallback prevMouseMoveCallback = nullptr;
 static b3MouseButtonCallback prevMouseButtonCallback = nullptr;
+static b3WheelCallback prevWheelCallback = nullptr;
 
 void MyKeyboardCallback(int key, int state)
 {
@@ -237,6 +240,12 @@ static void MyMouseButtonCallback(int button, int state, float x, float y)
 		prevMouseButtonCallback(button, state, x, y);
 }
 
+static void MyWheelCallback(float deltaX, float deltaY)
+{
+	if (inputIsCaptured == false && prevWheelCallback != nullptr)
+		prevWheelCallback(deltaX, deltaY);
+}
+
 //
 
 #include <string>
@@ -307,11 +316,14 @@ bool FrameworkExampleBrowser::init(int argc, char* argv[])
 {
 	prevMouseMoveCallback = s_window->getMouseMoveCallback();
 	s_window->setMouseMoveCallback(MyMouseMoveCallback);
-
 	prevMouseButtonCallback = s_window->getMouseButtonCallback();
 	s_window->setMouseButtonCallback(MyMouseButtonCallback);
+	
 	prevKeyboardCallback = s_window->getKeyboardCallback();
 	s_window->setKeyboardCallback(MyKeyboardCallback);
+	
+	prevWheelCallback = s_window->getWheelCallback();
+	s_window->setWheelCallback(MyWheelCallback);
 
 	s_app->m_renderer->getActiveCamera()->setCameraDistance(13);
 	s_app->m_renderer->getActiveCamera()->setCameraPitch(0);
@@ -450,23 +462,12 @@ static void doParameterInterface(FrameworkParameterInterface * paramInterface)
 			break;
 			
 		case FrameworkParameterInterface::kParamType_Button:
-			if (param.button.m_isTrigger && false)
 			{
-				if (ImGui::Button(param.button.m_name))
+				bool value = false;
+				if (ImGui::Selectable(param.name.c_str(), &value))
 				{
 					if (param.button.m_callback != nullptr)
 						param.button.m_callback(param.button.m_buttonId, 1, param.button.m_userPointer);
-				}
-			}
-			else
-			{
-				bool value = param.value != 0.f;
-				
-				if (ImGui::Selectable(param.button.m_name, &value))
-				{
-					param.value = value ? 1.f : 0.f;
-					if (param.button.m_callback != nullptr)
-						param.button.m_callback(param.button.m_buttonId, param.button.m_initialState, param.button.m_userPointer);
 				}
 			}
 			break;
@@ -474,10 +475,10 @@ static void doParameterInterface(FrameworkParameterInterface * paramInterface)
 			{
 				if (param.slider.m_clampToIntegers)
 				{
-					int value = *param.slider.m_paramValuePointer;
-					if (ImGui::SliderInt(param.slider.m_name, &value, param.slider.m_minVal, param.slider.m_maxVal))
+					int value = param.value;
+					if (ImGui::SliderInt(param.name.c_str(), &value, param.slider.m_minVal, param.slider.m_maxVal))
 					{
-						param.value = value;
+						*param.slider.m_paramValuePointer = value;
 						if (param.slider.m_callback != nullptr)
 							param.slider.m_callback(value, param.slider.m_userPointer);
 					}
@@ -485,9 +486,9 @@ static void doParameterInterface(FrameworkParameterInterface * paramInterface)
 				else
 				{
 					float value = *param.slider.m_paramValuePointer;
-					if (ImGui::SliderFloat(param.slider.m_name, &value, param.slider.m_minVal, param.slider.m_maxVal))
+					if (ImGui::SliderFloat(param.name.c_str(), &value, param.slider.m_minVal, param.slider.m_maxVal))
 					{
-						param.value = value;
+						*param.slider.m_paramValuePointer = value;
 						if (param.slider.m_callback != nullptr)
 							param.slider.m_callback(value, param.slider.m_userPointer);
 					}
@@ -498,7 +499,7 @@ static void doParameterInterface(FrameworkParameterInterface * paramInterface)
 			{
 				ImGui::PushID(&param);
 				int item = (int)param.value;
-				if (ImGui::Combo("Combo", &item, param.comboBox.m_items, param.comboBox.m_numItems))
+				if (ImGui::Combo("", &item, param.comboBox.m_items, param.comboBox.m_numItems))
 				{
 					if (param.comboBox.m_callback != nullptr)
 					{
@@ -519,6 +520,8 @@ static void doImGui(FrameworkImGuiContext & guiContext)
 {
 	guiContext.processBegin(framework.timeStep, s_app->m_window->getWidth(), s_app->m_window->getHeight(), inputIsCaptured);
 	{
+		ImGui::StyleColorsLight();
+		
 		if (ImGui::BeginMainMenuBar())
 		{
 			if (ImGui::BeginMenu("Example"))
@@ -610,23 +613,40 @@ static void doImGui(FrameworkImGuiContext & guiContext)
 		}
 		ImGui::End();
 		
+		auto * parameterInterface = static_cast<FrameworkParameterInterface*>(s_app->m_parameterInterface);
+		
+		if (parameterInterface->m_params.empty() == false)
+		{
+			ImGui::SetNextWindowPos(ImVec2(viewSx - 340, 30), ImGuiCond_Once);
+			ImGui::SetNextWindowSize(ImVec2(320, 0), ImGuiCond_Once);
+			if (ImGui::Begin("Parameters"))
+			{
+				ImGui::PushItemWidth(140.f);
+				doParameterInterface(parameterInterface);
+				ImGui::PopItemWidth();
+			}
+			ImGui::End();
+		}
+		
 		auto * canvasInterface = static_cast<FrameworkCanvasInterface*>(s_app->m_2dCanvasInterface);
 		
-		for (auto & i : canvasInterface->m_canvases)
+		if (canvasInterface->m_canvases.empty() == false)
 		{
-			auto * canvas = i.second;
-			
-			if (canvas->texture.id == 0)
-				continue;
-			
-			ImGui::PushID(canvas);
 			ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_Once);
 			if (ImGui::Begin("Canvas", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 			{
-				ImGui::Image(canvas->texture.id, ImVec2(canvas->sx, canvas->sy));
+				for (auto & i : canvasInterface->m_canvases)
+				{
+					auto * canvas = i.second;
+					
+					if (canvas->texture.id == 0)
+						continue;
+					
+						ImGui::Image(canvas->texture.id, ImVec2(canvas->sx, canvas->sy));
+						ImGui::SameLine();
+				}
 			}
 			ImGui::End();
-			ImGui::PopID();
 		}
 	}
 	guiContext.processEnd();
@@ -638,7 +658,7 @@ int main(int argc, char * argv[])
 {
 	setupPaths(CHIBI_RESOURCE_PATHS);
 	
-	s_app = new SimpleFrameworkApp("Example Browser", 800, 600);
+	s_app = new SimpleFrameworkApp("Example Browser", 1200, 600);
 	
 	s_window = s_app->m_window;
 	
