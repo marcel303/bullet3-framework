@@ -227,7 +227,7 @@ void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 				const bool hasTex = shape->textureId > 0;
 				const GxTextureId textureId = hasTex ? m_textures[shape->textureId]->id : 0;
 				
-				shader.setTexture("u_tex", 0, hasTex ? textureId : 0, true, true);
+				shader.setTexture("u_tex", 0, hasTex ? textureId : 0, true, false);
 				shader.setImmediate(u_hasTex, hasTex ? 1.f : 0.f);
 				shader.setImmediate(u_color,
 					instance->color.r,
