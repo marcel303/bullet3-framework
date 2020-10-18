@@ -39,14 +39,8 @@ static bool renderVisualGeometry = true;
 static bool renderGrid = true;
 static bool gEnableRenderLoop = true;
 
-//int gDebugDrawFlags = 0; // todo : enable keyboard shortcuts for changing debug draw mode
-static int gDebugDrawFlags =
-	0*btIDebugDraw::DBG_DrawWireframe |
-	0*btIDebugDraw::DBG_DrawAabb |
-	1*btIDebugDraw::DBG_DrawContactPoints |
-	0*btIDebugDraw::DBG_DrawFeaturesText |
-	1*btIDebugDraw::DBG_DrawNormals;
-	
+int gDebugDrawFlags = 0;
+
 static bool pauseSimulation = false;
 static bool singleStepSimulation = false;
 
@@ -628,7 +622,7 @@ static void doImGui(FrameworkImGuiContext & guiContext)
 			ImGui::End();
 		}
 		
-		auto * canvasInterface = static_cast<FrameworkCanvasInterface*>(s_app->m_2dCanvasInterface);
+		auto * canvasInterface = static_cast<Framework2dCanvasInterface*>(s_app->m_2dCanvasInterface);
 		
 		if (canvasInterface->m_canvases.empty() == false)
 		{

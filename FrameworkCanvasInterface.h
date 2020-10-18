@@ -6,7 +6,7 @@
 #include <map>
 #include <stdint.h>
 
-struct FrameworkCanvas
+struct Framework2dCanvas
 {
 	uint8_t * pixels = nullptr;
 	int sx = 0;
@@ -14,7 +14,7 @@ struct FrameworkCanvas
 	
 	GxTexture texture;
 	
-	~FrameworkCanvas()
+	~Framework2dCanvas()
 	{
 		texture.free();
 		
@@ -25,14 +25,14 @@ struct FrameworkCanvas
 	uint8_t * getLine(const int y) { return pixels + y * sx * 4; }
 };
 
-class FrameworkCanvasInterface : public Common2dCanvasInterface
+class Framework2dCanvasInterface : public Common2dCanvasInterface
 {
 public:
-	std::map<int, FrameworkCanvas*> m_canvases;
+	std::map<int, Framework2dCanvas*> m_canvases;
 	int m_nextCanvasId = 1;
 	
 public:
-	virtual ~FrameworkCanvasInterface() override final;
+	virtual ~Framework2dCanvasInterface() override final;
 	
 	virtual int createCanvas(const char* canvasName, int width, int height, int xPos, int yPos) override final;
 	virtual void destroyCanvas(int canvasId) override final;

@@ -2,17 +2,17 @@
 #include "FrameworkCanvasInterface.h"
 #include <map>
 
-FrameworkCanvasInterface::~FrameworkCanvasInterface()
+Framework2dCanvasInterface::~Framework2dCanvasInterface()
 {
 }
 
-int FrameworkCanvasInterface::createCanvas(const char* canvasName, int width, int height, int xPos, int yPos)
+int Framework2dCanvasInterface::createCanvas(const char* canvasName, int width, int height, int xPos, int yPos)
 {
 	const int id = m_nextCanvasId++;
 	Assert(m_canvases[id] == nullptr);
 	
 	auto *& canvas = m_canvases[id];
-	canvas = new FrameworkCanvas();
+	canvas = new Framework2dCanvas();
 	canvas->pixels = new uint8_t[width * height * 4];
 	canvas->sx = width;
 	canvas->sy = height;
@@ -21,7 +21,7 @@ int FrameworkCanvasInterface::createCanvas(const char* canvasName, int width, in
 	return id;
 }
 
-void FrameworkCanvasInterface::destroyCanvas(int canvasId)
+void Framework2dCanvasInterface::destroyCanvas(int canvasId)
 {
 	auto i = m_canvases.find(canvasId);
 	Assert(i != m_canvases.end());
@@ -36,7 +36,7 @@ void FrameworkCanvasInterface::destroyCanvas(int canvasId)
 	}
 }
 
-void FrameworkCanvasInterface::setPixel(int canvasId, int x, int y, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha)
+void Framework2dCanvasInterface::setPixel(int canvasId, int x, int y, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha)
 {
 	auto i = m_canvases.find(canvasId);
 	Assert(i != m_canvases.end());
@@ -57,7 +57,7 @@ void FrameworkCanvasInterface::setPixel(int canvasId, int x, int y, unsigned cha
 	}
 }
 
-void FrameworkCanvasInterface::getPixel(int canvasId, int x, int y, unsigned char& red, unsigned char& green, unsigned char& blue, unsigned char& alpha)
+void Framework2dCanvasInterface::getPixel(int canvasId, int x, int y, unsigned char& red, unsigned char& green, unsigned char& blue, unsigned char& alpha)
 {
 	auto i = m_canvases.find(canvasId);
 	Assert(i != m_canvases.end());
@@ -82,7 +82,7 @@ void FrameworkCanvasInterface::getPixel(int canvasId, int x, int y, unsigned cha
 	red = green = blue = alpha = 0xff;
 }
 
-void FrameworkCanvasInterface::refreshImageData(int canvasId)
+void Framework2dCanvasInterface::refreshImageData(int canvasId)
 {
 	auto i = m_canvases.find(canvasId);
 	Assert(i != m_canvases.end());

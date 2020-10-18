@@ -7,7 +7,7 @@
 #include "Bullet3Common/b3Quaternion.h"
 #include "LinearMath/btAlignedObjectArray.h"
 
-#include "FrameworkCanvasInterface.h" // todo : rename to 2dCanvasInterface.h
+#include "FrameworkCanvasInterface.h" // todo : rename to Framework2dCanvasInterface.h
 #include "FrameworkParameterInterface.h"
 #include "FrameworkRenderInterface.h"
 #include "FrameworkWindow.h"
@@ -101,7 +101,7 @@ SimpleFrameworkApp::SimpleFrameworkApp(
 
 	m_parameterInterface = new FrameworkParameterInterface();
 	
-	m_2dCanvasInterface = new FrameworkCanvasInterface();
+	m_2dCanvasInterface = new Framework2dCanvasInterface();
 
 	m_window->setResizeCallback(SimpleResizeCallback);
 
