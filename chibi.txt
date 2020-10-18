@@ -58,8 +58,8 @@ library bullet3-framework
 	depend_library bullet3-examples-utils
 	depend_library bullet3-softBody
 	depend_library framework
-	add_files FrameworkCanvasInterface.cpp
-	add_files FrameworkCanvasInterface.h
+	add_files Framework2dCanvasInterface.cpp
+	add_files Framework2dCanvasInterface.h
 	add_files FrameworkDebugDrawer.cpp
 	add_files FrameworkDebugDrawer.h
 	add_files FrameworkGuiHelper.cpp

@@ -11,7 +11,7 @@
 #include "Bullet3Common/b3FileUtils.h"
 
 #include "framework.h"
-#include "FrameworkCanvasInterface.h"
+#include "Framework2dCanvasInterface.h"
 #include "FrameworkDebugDrawer.h"
 #include "FrameworkGuiHelper.h"
 #include "FrameworkParameterInterface.h"

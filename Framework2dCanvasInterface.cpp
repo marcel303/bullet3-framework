@@ -1,5 +1,5 @@
 #include "Debugging.h"
-#include "FrameworkCanvasInterface.h"
+#include "Framework2dCanvasInterface.h"
 #include <map>
 
 Framework2dCanvasInterface::~Framework2dCanvasInterface()
