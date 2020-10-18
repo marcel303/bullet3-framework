@@ -1,6 +1,11 @@
 #include "SimpleDynamicsWorld.h"
 
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
+#include "BulletSoftBody/btSoftBody.h"
+#include "BulletSoftBody/btSoftMultiBodyDynamicsWorld.h"
+
+#include <BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
+#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h>
 
 #include "FrameworkDebugDrawer.h"
 
@@ -13,8 +18,9 @@ void SimpleDynamicsWorld::init()
 
 void SimpleDynamicsWorld::init(Settings & settings)
 {
-	// collision configuration contains default setup for memory, collision setup
-	collisionConfiguration = new btDefaultCollisionConfiguration();
+	// create the collision detection broadphase and the constraint solver
+	
+	collisionConfiguration = new btSoftBodyRigidBodyCollisionConfiguration();
 
 	collisionDispatcher = new btCollisionDispatcher(collisionConfiguration);
 
@@ -25,9 +31,9 @@ void SimpleDynamicsWorld::init(Settings & settings)
 
 	constraintSolver = new btMultiBodyConstraintSolver();
 
-	//
+	// create the dynamics world
 	
-	dynamicsWorld = new btMultiBodyDynamicsWorld(
+	dynamicsWorld = new btSoftMultiBodyDynamicsWorld(
 		collisionDispatcher,
 		broadphase,
 		constraintSolver,
@@ -35,9 +41,16 @@ void SimpleDynamicsWorld::init(Settings & settings)
 
 	dynamicsWorld->setGravity(btVector3(0, -10, 0));
 
-	//
-
-// todo : store debug drawer
+	// setup the soft body world info
+	
+	softBodyWorldInfo = new btSoftBodyWorldInfo();
+	softBodyWorldInfo->m_broadphase = broadphase;
+	softBodyWorldInfo->m_dispatcher = collisionDispatcher;
+	softBodyWorldInfo->m_gravity = dynamicsWorld->getGravity();
+	softBodyWorldInfo->m_sparsesdf.Initialize();
+	softBodyWorldInfo->m_sparsesdf.setDefaultVoxelsz(0.25);
+	
+	// create the debug drawer
 
 	debugDrawer = new FrameworkDebugDrawer();
 	
@@ -47,6 +60,15 @@ void SimpleDynamicsWorld::init(Settings & settings)
 		0*btIDebugDraw::DBG_DrawContactPoints |
 		1*btIDebugDraw::DBG_DrawNormals);
 	
+	/*
+	debugDrawer->setDebugMode(
+		1*btIDebugDraw::DBG_DrawWireframe |
+		0*btIDebugDraw::DBG_DrawAabb |
+		1*btIDebugDraw::DBG_DrawContactPoints |
+		1*btIDebugDraw::DBG_DrawConstraints |
+		1*btIDebugDraw::DBG_DrawConstraintLimits |
+		1*btIDebugDraw::DBG_DrawNormals);
+	*/
 	dynamicsWorld->setDebugDrawer(debugDrawer);
 }
 
@@ -98,6 +120,9 @@ void SimpleDynamicsWorld::shut()
 	delete debugDrawer;
 	debugDrawer = nullptr;
 	
+	delete softBodyWorldInfo;
+	softBodyWorldInfo = nullptr;
+	
 	delete dynamicsWorld;
 	dynamicsWorld = nullptr;
 
@@ -140,7 +165,75 @@ btRigidBody * SimpleDynamicsWorld::createRigidBody(
 	
 	dynamicsWorld->addRigidBody(body);
 	
+	softBodyWorldInfo->m_sparsesdf.Reset();
+	
 	return body;
+}
+
+static btSoftBody * createRope(
+	btSoftBodyWorldInfo & worldInfo,
+	const btVector3 & from,
+	const btVector3 & to,
+	const int numRopeSegments,
+	int fixeds)
+{
+	const int numNodes = numRopeSegments + 1;
+	
+	btVector3 * x = new btVector3[numNodes];
+	btScalar * m = new btScalar[numNodes];
+
+	for (int i = 0; i < numNodes; ++i)
+	{
+		const btScalar t = i / btScalar(numNodes - 1);
+		
+		x[i] = lerp(from, to, t);
+		m[i] = 1;
+	}
+	
+	btSoftBody * psb = new btSoftBody(&worldInfo, numNodes, x, m);
+	
+	if (fixeds & 1) psb->setMass(0, 0);
+	if (fixeds & 2) psb->setMass(numNodes - 1, 0);
+	
+	delete [] x;
+	delete [] m;
+	
+	// create links
+	
+	for (int i = 1; i < numNodes; ++i)
+	{
+		psb->appendLink(i - 1, i);
+	}
+	
+	return psb;
+}
+
+btSoftBody * SimpleDynamicsWorld::connectWithRope(btRigidBody * body1, btRigidBody * body2, const int numRopeSegments, const float stiffness)
+{
+	btSoftBody * softBodyRope0 = createRope(
+		*softBodyWorldInfo,
+		body1->getWorldTransform().getOrigin(),
+		body2->getWorldTransform().getOrigin(),
+		numRopeSegments,
+		0);
+	
+	softBodyRope0->setTotalMass(0.1f);
+
+	softBodyRope0->appendAnchor(0, body1);
+	softBodyRope0->appendAnchor(softBodyRope0->m_nodes.size() - 1, body2);
+
+	softBodyRope0->m_cfg.piterations = 5;
+	softBodyRope0->m_cfg.kDP = 0.005f;
+	softBodyRope0->m_cfg.kSHR = 1;
+	softBodyRope0->m_cfg.kCHR = 1;
+	softBodyRope0->m_cfg.kKHR = 1;
+	
+	for (int i = 0; i < softBodyRope0->m_materials.size(); ++i)
+		softBodyRope0->m_materials[i]->m_kLST = stiffness; // LST = linear stiffness coefficient
+
+	dynamicsWorld->addSoftBody(softBodyRope0);
+	
+	return softBodyRope0;
 }
 
 void SimpleDynamicsWorld::debugDraw()
