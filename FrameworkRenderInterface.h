@@ -3,8 +3,15 @@
 #include "CommonInterfaces/CommonRenderInterface.h"
 #include "OpenGLWindow/SimpleCamera.h"
 #include "Vec3.h"
+#include <map>
+
+struct GxTexture;
 
 class Mat4x4;
+class ShaderBuffer;
+
+struct FrameworkGraphicsInstance;
+struct FrameworkGraphicsShape;
 
 class FrameworkRenderInterface : public CommonRenderInterface
 {
@@ -18,6 +25,20 @@ private:
 	{
 		Vec3 position;
 	} light;
+	
+	ShaderBuffer * transformsBuffer = nullptr;
+	ShaderBuffer * colorsBuffer = nullptr;
+	
+	std::map<int, FrameworkGraphicsShape*> m_graphicsShapes;
+	int m_nextGraphicsShapeId = 1;
+
+	std::map<int, FrameworkGraphicsInstance*> m_graphicsInstances;
+	int m_nextGraphicsInstanceId = 1;
+
+	std::map<int, GxTexture*> m_textures;
+	int m_nextTextureId = 1;
+	
+	FrameworkGraphicsInstance * resolveGraphicsInstance(int id) const;
 	
 	void calculateViewMatrix(Mat4x4 & result) const;
 	

@@ -40,28 +40,27 @@ struct FrameworkGraphicsInstance
 	}
 };
 
-// todo : move to internal data
-static std::map<int, FrameworkGraphicsShape*> m_graphicsShapes;
-static int m_nextGraphicsShapeId = 1;
-
-static std::map<int, FrameworkGraphicsInstance*> m_graphicsInstances;
-static int m_nextGraphicsInstanceId = 1;
-
-static std::map<int, GxTexture*> m_textures;
-static int m_nextTextureId = 1;
-
-static FrameworkGraphicsInstance * resolveGraphicsInstance(int id)
-{
-	auto i = m_graphicsInstances.find(id);
-	Assert(i != m_graphicsInstances.end());
-	
-	if (i != m_graphicsInstances.end())
-		return i->second;
-	else
-		return nullptr;
-}
-
 //
+
+static const int kMaxInstances = 64;
+
+FrameworkGraphicsInstance * FrameworkRenderInterface::resolveGraphicsInstance(int id) const
+{
+	if (id < 0)
+	{
+		return nullptr;
+	}
+	else
+	{
+		auto i = m_graphicsInstances.find(id);
+		Assert(i != m_graphicsInstances.end());
+		
+		if (i != m_graphicsInstances.end())
+			return i->second;
+		else
+			return nullptr;
+	}
+}
 
 void FrameworkRenderInterface::calculateViewMatrix(Mat4x4 & viewMatrix) const
 {
@@ -72,11 +71,23 @@ void FrameworkRenderInterface::calculateViewMatrix(Mat4x4 & viewMatrix) const
 FrameworkRenderInterface::~FrameworkRenderInterface()
 {
 	removeAllInstances();
+	
+	transformsBuffer->free();
+	colorsBuffer->free();
+	
+	delete transformsBuffer;
+	delete colorsBuffer;
 }
 
 void FrameworkRenderInterface::init()
 {
 	light.position.Set(-50, 30, 40);
+	
+	transformsBuffer = new ShaderBuffer();
+	transformsBuffer->alloc(sizeof(Mat4x4) * kMaxInstances);
+
+	colorsBuffer = new ShaderBuffer();
+	colorsBuffer->alloc(sizeof(Color) * (2 * kMaxInstances));
 }
 
 void FrameworkRenderInterface::updateCamera(int upAxis)
@@ -86,6 +97,7 @@ void FrameworkRenderInterface::updateCamera(int upAxis)
 	Mat4x4 viewMatrix;
 	calculateViewMatrix(viewMatrix);
 	gxSetMatrixf(GX_MODELVIEW, viewMatrix.m_v);
+	updateCullFlip();
 }
 
 void FrameworkRenderInterface::removeAllInstances()
@@ -194,11 +206,14 @@ void FrameworkRenderInterface::renderScene()
 
 void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 {
+#if 0
+	// non-instanced code path. legacy. here for reference and troubleshooting
 	Mat4x4 viewMatrix;
 	gxGetMatrixf(GX_MODELVIEW, viewMatrix.m_v);
 	
 	const Vec3 lightPosition_view = viewMatrix.Mul4(light.position);
 	
+	pushCullMode(CULL_BACK, CULL_CW);
 	Shader shader("shaders/bullet3-shape");
 	setShader(shader);
 	shader.setImmediate("u_lightPosition_view",
@@ -238,12 +253,114 @@ void FrameworkRenderInterface::renderSceneInternal(int renderMode)
 					instance->specularColor.r,
 					instance->specularColor.g,
 					instance->specularColor.b);
-				shape->mesh.draw();
+				shape->mesh.drawInstanced(1);
 			}
 			gxPopMatrix();
 		}
 	}
 	clearShader();
+	popCullMode();
+#else
+	Mat4x4 projectionMatrix;
+	gxGetMatrixf(GX_PROJECTION, projectionMatrix.m_v);
+	
+	Mat4x4 viewMatrix;
+	gxGetMatrixf(GX_MODELVIEW, viewMatrix.m_v);
+	
+	const Vec3 lightPosition_view = viewMatrix.Mul4(light.position);
+	
+	pushCullMode(CULL_BACK, CULL_CW);
+	Shader shader("shaders/bullet3-shape-instanced");
+	setShader(shader);
+	{
+		shader.setImmediateMatrix4x4("u_viewMatrix", viewMatrix.m_v);
+		shader.setImmediateMatrix4x4("u_viewProjectionMatrix", (projectionMatrix * viewMatrix).m_v);
+		shader.setImmediate("u_lightPosition_view",
+			lightPosition_view[0],
+			lightPosition_view[1],
+			lightPosition_view[2]);
+		
+		const GxImmediateIndex u_hasTex = shader.getImmediateIndex("u_hasTex");
+
+		Mat4x4 transforms[kMaxInstances];
+		Color * colors = (Color*)alloca(kMaxInstances * (sizeof(Color) * 2));
+		
+		int numInstances = 0;
+		
+		int batch_shapeId = -1;
+		
+		auto flush = [&]()
+		{
+			auto shape_itr = m_graphicsShapes.find(batch_shapeId);
+			
+			Assert(shape_itr != m_graphicsShapes.end());
+			if (shape_itr == m_graphicsShapes.end())
+				return;
+			
+			auto * shape = shape_itr->second;
+			
+			const bool hasTex = shape->textureId > 0;
+			const GxTextureId textureId = hasTex ? m_textures[shape->textureId]->id : 0;
+
+			shader.setTexture("u_tex", 0, hasTex ? textureId : 0, true, false);
+			shader.setImmediate(u_hasTex, hasTex ? 1.f : 0.f);
+			
+			transformsBuffer->setData(&transforms, sizeof(Mat4x4) * numInstances);
+			shader.setBuffer("transforms", *transformsBuffer);
+			
+			colorsBuffer->setData(colors, sizeof(Color) * (2 * numInstances));
+			shader.setBuffer("colors", *colorsBuffer);
+
+			shape->mesh.drawInstanced(numInstances);
+			
+			numInstances = 0;
+		};
+		
+		// gather a list of all instances
+		
+		std::vector<FrameworkGraphicsInstance*> instances;
+		instances.reserve(m_graphicsInstances.size());
+		
+		for (auto & instance_itr : m_graphicsInstances)
+			instances.push_back(instance_itr.second);
+		
+		// sort the instances by shape
+		
+		std::sort(instances.begin(), instances.end(),
+			[](const FrameworkGraphicsInstance * instance1, const FrameworkGraphicsInstance * instance2) -> bool
+			{
+				return instance1->shapeId < instance2->shapeId;
+			});
+
+		// draw instances, batched by shape
+
+		for (auto * instance : instances)
+		{
+			if (instance->shapeId != batch_shapeId)
+			{
+				if (numInstances != 0)
+					flush();
+				
+				batch_shapeId = instance->shapeId;
+			}
+			
+			instance->calculateTransform(transforms[numInstances]);
+			
+			colors[numInstances * 2 + 0] = instance->color;
+			colors[numInstances * 2 + 1] = instance->specularColor;
+			
+			numInstances++;
+			
+			if (numInstances == kMaxInstances)
+				flush();
+		}
+		
+		if (numInstances != 0)
+			flush();
+	}
+	clearShader();
+	popCullMode();
+#endif
 }
 
 int FrameworkRenderInterface::getScreenWidth()
@@ -531,8 +648,18 @@ int FrameworkRenderInterface::getShapeIndexFromInstance(int instanceId)
 
 bool FrameworkRenderInterface::readSingleInstanceTransformToCPU(float* position, float* orientation, int srcIndex)
 {
-	Assert(false); // todo : read instance transform
-	return false;
+	auto * instance = resolveGraphicsInstance(srcIndex);
+	
+	if (instance != nullptr)
+	{
+		memcpy(position, &instance->position, 3 * sizeof(float));
+		memcpy(orientation, &instance->rotation, 4 * sizeof(float));
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 void FrameworkRenderInterface::writeSingleInstanceTransformToCPU(const float* position, const float* orientation, int srcIndex)
@@ -617,7 +744,25 @@ void FrameworkRenderInterface::writeTransforms()
 
 void FrameworkRenderInterface::clearZBuffer()
 {
-	Assert(false);
+	pushDepthTest(true, DEPTH_ALWAYS);
+	pushColorWriteMask(0, 0, 0, 0);
+	gxMatrixMode(GX_PROJECTION);
+	gxPushMatrix();
+	gxLoadIdentity();
+	gxMatrixMode(GX_MODELVIEW);
+	gxPushMatrix();
+	gxLoadIdentity();
+	{
+		gxTranslatef(0, 0, 1.f);
+		
+		drawRect(-1, -1, +1, +1);
+	}
+	gxMatrixMode(GX_PROJECTION);
+	gxPopMatrix();
+	gxMatrixMode(GX_MODELVIEW);
+	gxPopMatrix();
+	popColorWriteMask();
+	popDepthTest();
 }
 
 struct GLInstanceRendererInternalData * FrameworkRenderInterface::getInternalData()
