@@ -9,6 +9,22 @@
 #include "BulletSoftBody/btSoftBodyHelpers.h"
 #include "LinearMath/btTransform.h"
 
+#if FRAMEWORK_USE_OVR_MOBILE
+	#define LOWRES 1
+#else
+	#define LOWRES 0
+#endif
+
+#if LOWRES
+	#define sphere_vertices medium_sphere_vertices
+	#define sphere_indices medium_sphere_indices
+	#define sphere_scale 1
+#else
+	#define sphere_vertices textured_detailed_sphere_vertices
+	#define sphere_indices textured_detailed_sphere_indices
+	#define sphere_scale 2
+#endif
+
 static void appendPrim(
 	const ShapeVertex * __restrict vertices,
 	const int numVertices,
@@ -16,6 +32,7 @@ static void appendPrim(
 	const int numIndices,
 	const btTransform * transform,
 	const btVector3 & halfExtents,
+	const float uvScale,
 	btAlignedObjectArray<ShapeVertex> & out_vertices,
 	btAlignedObjectArray<int> & out_indices)
 {
@@ -42,6 +59,15 @@ static void appendPrim(
 			x = p.x();
 			y = p.y();
 			z = p.z();
+		}
+	}
+	
+	if (uvScale != 1.f)
+	{
+		for (int i = 0; i < numVertices; ++i)
+		{
+			out_vertices[baseVertex + i].uv[0] *= uvScale;
+			out_vertices[baseVertex + i].uv[1] *= uvScale;
 		}
 	}
 	
@@ -160,21 +186,23 @@ static void appendShape(
 			sizeof(cube_indices) / sizeof(cube_indices[0]),
 			shapeTransform,
 			halfExtents,
+			1.f,
 			out_vertices,
 			out_indices);
 	}
 	else if (collisionShape->getShapeType() == SPHERE_SHAPE_PROXYTYPE)
 	{
 		const btSphereShape * sphereShape = (btSphereShape*)collisionShape;
-		const btScalar sphereSize = 2. * sphereShape->getRadius();
+		const btScalar sphereSize = sphere_scale * sphereShape->getRadius();
 
 		appendPrim(
-			(ShapeVertex*)textured_detailed_sphere_vertices,
-			sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes,
-			textured_detailed_sphere_indices,
-			sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]),
+			(ShapeVertex*)sphere_vertices,
+			sizeof(sphere_vertices) / vertexStrideInBytes,
+			sphere_indices,
+			sizeof(sphere_indices) / sizeof(sphere_indices[0]),
 			shapeTransform,
 			btVector3(sphereSize, sphereSize, sphereSize),
+			1.f,
 			out_vertices,
 			out_indices);
 	}
@@ -185,18 +213,19 @@ static void appendShape(
 		const btScalar halfHeight = capsuleShape->getHalfHeight();
 
 		const btScalar radius = capsuleShape->getRadius();
-		const btScalar sphereSize = 2. * radius;
+		const btScalar sphereSize = sphere_scale * radius;
 
 		const btVector3 radiusScale = btVector3(sphereSize, sphereSize, sphereSize);
-
-		const int numVertices = sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes;
-		const int numIndices = sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]);
-		const int * indices = textured_detailed_sphere_indices;
+		
+		const int numVertices = sizeof(sphere_vertices) / vertexStrideInBytes;
+		const int numIndices = sizeof(sphere_indices) / sizeof(sphere_indices[0]);
+		const int * indices = sphere_indices;
+		const ShapeVertex * vertices = (ShapeVertex*)sphere_vertices;
 		
 		btAlignedObjectArray<ShapeVertex> transformedVertices;
 		transformedVertices.resize(numVertices);
 		for (size_t i = 0; i < numVertices; ++i)
-			transformedVertices[i] = ((ShapeVertex*)textured_detailed_sphere_vertices)[i];
+			transformedVertices[i] = vertices[i];
 		
 		for (int i = 0; i < numVertices; ++i)
 		{
@@ -210,7 +239,16 @@ static void appendShape(
 				transformedVertices[i].xyzw[up] -= halfHeight;
 		}
 		
-		appendPrim(&transformedVertices[0], numVertices, indices, numIndices, shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
+		appendPrim(
+			&transformedVertices[0],
+			numVertices,
+			indices,
+			numIndices,
+			shapeTransform,
+			btVector3(1., 1., 1.),
+			1.f,
+			out_vertices,
+			out_indices);
 	}
 	else if (collisionShape->getShapeType() == MULTI_SPHERE_SHAPE_PROXYTYPE)
 	{
@@ -219,8 +257,6 @@ static void appendShape(
 		for (int i = 0; i < multiSphereShape->getSphereCount(); ++i)
 		{
 			const btVector3 position = multiSphereShape->getSpherePosition(i);
-			const btScalar radius = multiSphereShape->getSphereRadius(i);
-			const btScalar sphereSize = 2. * radius;
 
 			btTransform transform;
 			transform.setIdentity();
@@ -229,13 +265,17 @@ static void appendShape(
 			if (shapeTransform != nullptr)
 				transform = (*shapeTransform) * transform;
 			
+			const btScalar radius = multiSphereShape->getSphereRadius(i);
+			const btScalar sphereSize = sphere_scale * radius;
+			
 			appendPrim(
-				(ShapeVertex*)textured_detailed_sphere_vertices,
-				sizeof(textured_detailed_sphere_vertices) / vertexStrideInBytes,
-				textured_detailed_sphere_indices,
-				sizeof(textured_detailed_sphere_indices) / sizeof(textured_detailed_sphere_indices[0]),
+				(ShapeVertex*)sphere_vertices,
+				sizeof(sphere_vertices) / vertexStrideInBytes,
+				sphere_indices,
+				sizeof(sphere_indices) / sizeof(sphere_indices[0]),
 				&transform,
 				btVector3(sphereSize, sphereSize, sphereSize),
+				1.f,
 				out_vertices,
 				out_indices);
 		}
@@ -294,7 +334,7 @@ static void appendShape(
 		vertices[3].uv[0] = +vecLen / 2;
 		vertices[3].uv[1] = -vecLen / 2;
 
-		appendPrim(vertices, 4, indices, 6, shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
+		appendPrim(vertices, 4, indices, 6, shapeTransform, btVector3(1., 1., 1.), 1.f, out_vertices, out_indices);
 	}
 	else if (collisionShape->getShapeType() == TERRAIN_SHAPE_PROXYTYPE)
 	{
@@ -323,6 +363,7 @@ static void appendShape(
 				triangleCollector.m_indices.size(),
 				shapeTransform,
 				btVector3(1., 1., 1.),
+				1.f,
 				out_vertices,
 				out_indices);
 		}
@@ -333,7 +374,7 @@ static void appendShape(
 		btAlignedObjectArray<int> indices;
 		computeSoftBodyVertices(collisionShape, vertices, indices);
 		if (vertices.size() > 0)
-			appendPrim(&vertices[0], vertices.size(), &indices[0], indices.size(), shapeTransform, btVector3(1., 1., 1.), out_vertices, out_indices);
+			appendPrim(&vertices[0], vertices.size(), &indices[0], indices.size(), shapeTransform, btVector3(1., 1., 1.), 1.f, out_vertices, out_indices);
 	}
 	else if (collisionShape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE)
 	{
@@ -355,6 +396,7 @@ static void appendShape(
 				triangleCollector.m_indices.size(),
 				shapeTransform,
 				btVector3(1., 1., 1.),
+				1.f,
 				out_vertices,
 				out_indices);
 		}
@@ -379,6 +421,7 @@ static void appendShape(
 				triangleCollector.m_indices.size(),
 				shapeTransform,
 				btVector3(1., 1., 1.),
+				1.f,
 				out_vertices,
 				out_indices);
 		}
@@ -481,6 +524,7 @@ static void appendShape(
 				indices.size(),
 				shapeTransform,
 				btVector3(1., 1., 1.),
+				1.f,
 				out_vertices,
 				out_indices);
 		}
