@@ -75,12 +75,12 @@ void FrameworkGUIHelperInterface::syncPhysicsToGraphics(const btDiscreteDynamics
 
 void FrameworkGUIHelperInterface::syncPhysicsToGraphics2(const btDiscreteDynamicsWorld* rbWorld)
 {
-	Assert(false);
+	// for implementing a physics client-server connection. not implemented
 }
 
 void FrameworkGUIHelperInterface::syncPhysicsToGraphics2(const GUISyncPosition* positions, int numPositions)
 {
-	Assert(false);
+	// for implementing a physics client-server connection. not implemented
 }
 
 void FrameworkGUIHelperInterface::render(const btDiscreteDynamicsWorld* rbWorld)
@@ -210,7 +210,9 @@ bool FrameworkGUIHelperInterface::getCameraInfo(int* width, int* height, float v
 
 void FrameworkGUIHelperInterface::setVisualizerFlag(int flag, int enable)
 {
-	Assert(false);
+	// see b3ConfigureDebugVisualizerEnum
+	// controls things like shadows enabled, planar reflection enabled, wireframe, mouse picking etc
+	// not implemented
 }
 
 void FrameworkGUIHelperInterface::copyCameraImageData(
