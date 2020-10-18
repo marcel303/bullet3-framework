@@ -4,50 +4,59 @@ library bullet3 shared
 	add_files ../bullet3/src/btLinearMathAll.cpp
 	scan_files cpp path ../bullet3/src/Bullet3Common
 	scan_files h   path ../bullet3/src/Bullet3Common
+	compile_definition DEBUG 1 config Debug
 	header_path ../bullet3/src expose
 
 library bullet3-inverseDynamics shared
 	depend_library bullet3
 	scan_files cpp path ../bullet3/src/BulletInverseDynamics traverse
 	scan_files hpp path ../bullet3/src/BulletInverseDynamics traverse
+	compile_definition DEBUG 1 config Debug
 
 library bullet3-softBody shared
 	depend_library bullet3
 	scan_files cpp path ../bullet3/src/BulletSoftBody traverse
 	scan_files h   path ../bullet3/src/BulletSoftBody traverse
+	compile_definition DEBUG 1 config Debug
 
 library bullet3-extras-serialize-bulletFileLoader shared
 	depend_library bullet3
 	scan_files cpp path ../bullet3/Extras/Serialize/BulletFileLoader
 	scan_files h   path ../bullet3/Extras/Serialize/BulletFileLoader
+	compile_definition DEBUG 1 config Debug
 
 library bullet3-extras-serialize-bulletWorldImporter shared
 	depend_library bullet3
 	depend_library bullet3-extras-serialize-bulletFileLoader
 	scan_files cpp path ../bullet3/Extras/Serialize/BulletWorldImporter
 	scan_files h   path ../bullet3/Extras/Serialize/BulletWorldImporter
+	compile_definition DEBUG 1 config Debug
 
 library bullet3-extras-inverseDynamics shared
 	depend_library bullet3
 	depend_library bullet3-inverseDynamics
 	scan_files cpp path ../bullet3/Extras/InverseDynamics
 	scan_files hpp path ../bullet3/Extras/InverseDynamics
+	compile_definition DEBUG 1 config Debug
 
 app bullet3-examples-basicDemo
 	depend_library bullet3
 	add_files ../bullet3/examples/BasicDemo/BasicExample.cpp
 	add_files ../bullet3/examples/BasicDemo/BasicExample.h
 	add_files ../bullet3/examples/BasicDemo/main.cpp
+	compile_definition DEBUG 1 config Debug
 
 library bullet3-examples-utils
 	depend_library bullet3
 	scan_files cpp path ../bullet3/examples/Utils
 	scan_files h   path ../bullet3/examples/Utils
 	header_path ../bullet3/examples expose
+	compile_definition DEBUG 1 config Debug
 
 library bullet3-framework
 	depend_library bullet3
 	depend_library bullet3-examples-utils
+	depend_library bullet3-softBody
 	depend_library framework
 	add_files FrameworkCanvasInterface.cpp
 	add_files FrameworkCanvasInterface.h
@@ -109,6 +118,8 @@ library bullet3-exampleBrowser-exampleEntries
 	compile_definition EXAMPLE_CONSOLE_ONLY *
 	compile_definition ENABLE_LUA *
 # B3_ENABLE_TINY_AUDIO
+
+	compile_definition DEBUG 1 config Debug
 
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.cpp
 	add_files ../bullet3/examples/ExampleBrowser/ExampleEntries.h
