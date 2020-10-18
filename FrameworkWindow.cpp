@@ -1,6 +1,5 @@
 #include "framework.h"
 #include "FrameworkWindow.h"
-#include <SDL2/SDL.h>
 
 FrameworkWindow::~FrameworkWindow()
 {
@@ -53,9 +52,10 @@ void FrameworkWindow::runMainLoop()
 		if (mouse.scrollY != 0)
 			m_wheelCallback(0, mouse.scrollY);
 	}
-	
+
 	if (m_keyboardCallback != nullptr)
 	{
+	#if FRAMEWORK_USE_SDL
 		for (auto & e : framework.events)
 		{
 			if (e.type == SDL_KEYDOWN)
@@ -63,6 +63,7 @@ void FrameworkWindow::runMainLoop()
 			else if (e.type == SDL_KEYUP)
 				m_keyboardCallback(e.key.keysym.sym, 0);
 		}
+	#endif
 	}
 	
 	int viewSx;
