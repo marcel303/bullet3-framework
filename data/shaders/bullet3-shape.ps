@@ -43,7 +43,7 @@ void main()
 
 		// -- distance attenuation --
 		float distanceSquared = dot(surfaceToLightVector_unscaled, surfaceToLightVector_unscaled);
-		float attenuation = 1.0 / distanceSquared;
+		float attenuation = 1.0 / (distanceSquared + 0.001);
 
 		// - diffuse --
 		float diffuseFactor = max(0.0, dot(surfaceToLightVector, normalVector));
@@ -75,10 +75,10 @@ void main()
 		light *= lightColor;
 		light *= attenuation;
 
-		if (true)
+		if (false)
 		{
 			light *= 0.9;
-			light += 0.1 * abs(srgbToLinear(surfaceToLightVector));
+			light += 0.1 * srgbToLinear(abs(surfaceToLightVector));
 		}
 
 		//light = viewVector;
