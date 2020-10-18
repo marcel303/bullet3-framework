@@ -7,7 +7,7 @@
 #include "Bullet3Common/b3Quaternion.h"
 #include "LinearMath/btAlignedObjectArray.h"
 
-#include "Framework2dCanvasInterface.h" // todo : rename to Framework2dCanvasInterface.h
+#include "Framework2dCanvasInterface.h"
 #include "FrameworkParameterInterface.h"
 #include "FrameworkRenderInterface.h"
 #include "FrameworkWindow.h"
