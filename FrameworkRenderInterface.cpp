@@ -599,7 +599,7 @@ void FrameworkRenderInterface::activateTexture(int textureId)
 	{
 		auto * texture = i->second;
 		
-		gxSetTexture(texture->id);
+		gxSetTexture(texture->id, GX_SAMPLE_LINEAR, true);
 	}
 }
 
