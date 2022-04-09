@@ -555,8 +555,6 @@ int FrameworkRenderInterface::registerTexture(const unsigned char* texels, int w
 	properties.dimensions.sx = width;
 	properties.dimensions.sy = height;
 	properties.format = GX_RGBA8_UNORM;
-	properties.sampling.filter = true;
-	properties.sampling.clamp = false;
 	properties.mipmapped = true;
 	texture->allocate(properties);
 	

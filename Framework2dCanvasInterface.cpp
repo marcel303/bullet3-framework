@@ -16,7 +16,7 @@ int Framework2dCanvasInterface::createCanvas(const char* canvasName, int width, 
 	canvas->pixels = new uint8_t[width * height * 4];
 	canvas->sx = width;
 	canvas->sy = height;
-	canvas->texture.allocate(width, height, GX_RGBA8_UNORM, false, true);
+	canvas->texture.allocate(width, height, GX_RGBA8_UNORM);
 	
 	return id;
 }
